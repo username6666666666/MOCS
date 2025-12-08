@@ -38,7 +38,7 @@ namespace MOCS.Cores
         //    return _sequences.GetValueOrDefault(category, T.Zero);
         //}
 
-        public T GetNextSequence(PacketCategory category)
+        public T GetNextSequenceNum(PacketCategory category)
         {
             T current = _sequences.GetValueOrDefault(category, T.Zero);
             T next = current + T.One;
