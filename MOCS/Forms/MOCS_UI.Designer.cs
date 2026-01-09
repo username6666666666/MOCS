@@ -29,12 +29,12 @@
         private void InitializeComponent()
         {
             MOCSmenuStrip = new MenuStrip();
-            toolStripTextBox1 = new ToolStripTextBox();
-            toolStripTextBox2 = new ToolStripTextBox();
-            toolStripTextBox3 = new ToolStripTextBox();
-            toolStripTextBox4 = new ToolStripTextBox();
-            toolStripTextBox5 = new ToolStripTextBox();
-            toolStripTextBox6 = new ToolStripTextBox();
+            mOCSToolStripMenuItem = new ToolStripMenuItem();
+            mCUToolStripMenuItem = new ToolStripMenuItem();
+            lCUToolStripMenuItem1 = new ToolStripMenuItem();
+            lCUToolStripMenuItem = new ToolStripMenuItem();
+            vSPSToolStripMenuItem = new ToolStripMenuItem();
+            oBCToolStripMenuItem = new ToolStripMenuItem();
             MOCSpanel = new Panel();
             MOCStabControl = new TabControl();
             tabPage1 = new TabPage();
@@ -75,48 +75,54 @@
             // MOCSmenuStrip
             // 
             MOCSmenuStrip.ImageScalingSize = new Size(32, 32);
-            MOCSmenuStrip.Items.AddRange(new ToolStripItem[] { toolStripTextBox1, toolStripTextBox2, toolStripTextBox3, toolStripTextBox4, toolStripTextBox5, toolStripTextBox6 });
+            MOCSmenuStrip.Items.AddRange(new ToolStripItem[] { mOCSToolStripMenuItem, mCUToolStripMenuItem, lCUToolStripMenuItem1, lCUToolStripMenuItem, vSPSToolStripMenuItem, oBCToolStripMenuItem });
             MOCSmenuStrip.Location = new Point(0, 0);
             MOCSmenuStrip.Name = "MOCSmenuStrip";
             MOCSmenuStrip.Size = new Size(1894, 42);
             MOCSmenuStrip.TabIndex = 0;
             MOCSmenuStrip.Text = "menuStrip1";
             // 
-            // toolStripTextBox1
+            // mOCSToolStripMenuItem
             // 
-            toolStripTextBox1.Name = "toolStripTextBox1";
-            toolStripTextBox1.Size = new Size(100, 38);
-            toolStripTextBox1.Text = "MOCS";
+            mOCSToolStripMenuItem.Name = "mOCSToolStripMenuItem";
+            mOCSToolStripMenuItem.Size = new Size(107, 38);
+            mOCSToolStripMenuItem.Text = "MOCS";
+            mOCSToolStripMenuItem.Click += mOCSToolStripMenuItem_Click;
             // 
-            // toolStripTextBox2
+            // mCUToolStripMenuItem
             // 
-            toolStripTextBox2.Name = "toolStripTextBox2";
-            toolStripTextBox2.Size = new Size(100, 38);
-            toolStripTextBox2.Text = "MCU";
+            mCUToolStripMenuItem.Name = "mCUToolStripMenuItem";
+            mCUToolStripMenuItem.Size = new Size(91, 38);
+            mCUToolStripMenuItem.Text = "MCU";
+            mCUToolStripMenuItem.Click += mCUToolStripMenuItem_Click;
             // 
-            // toolStripTextBox3
+            // lCUToolStripMenuItem1
             // 
-            toolStripTextBox3.Name = "toolStripTextBox3";
-            toolStripTextBox3.Size = new Size(100, 38);
-            toolStripTextBox3.Text = "LCU";
+            lCUToolStripMenuItem1.Name = "lCUToolStripMenuItem1";
+            lCUToolStripMenuItem1.Size = new Size(80, 38);
+            lCUToolStripMenuItem1.Text = "LCU";
+            lCUToolStripMenuItem1.Click += lCUToolStripMenuItem1_Click;
             // 
-            // toolStripTextBox4
+            // lCUToolStripMenuItem
             // 
-            toolStripTextBox4.Name = "toolStripTextBox4";
-            toolStripTextBox4.Size = new Size(100, 38);
-            toolStripTextBox4.Text = "GCU";
+            lCUToolStripMenuItem.Name = "lCUToolStripMenuItem";
+            lCUToolStripMenuItem.Size = new Size(86, 38);
+            lCUToolStripMenuItem.Text = "GCU";
+            lCUToolStripMenuItem.Click += lCUToolStripMenuItem_Click;
             // 
-            // toolStripTextBox5
+            // vSPSToolStripMenuItem
             // 
-            toolStripTextBox5.Name = "toolStripTextBox5";
-            toolStripTextBox5.Size = new Size(100, 38);
-            toolStripTextBox5.Text = "VSPS";
+            vSPSToolStripMenuItem.Name = "vSPSToolStripMenuItem";
+            vSPSToolStripMenuItem.Size = new Size(93, 38);
+            vSPSToolStripMenuItem.Text = "VSPS";
+            vSPSToolStripMenuItem.Click += vSPSToolStripMenuItem_Click;
             // 
-            // toolStripTextBox6
+            // oBCToolStripMenuItem
             // 
-            toolStripTextBox6.Name = "toolStripTextBox6";
-            toolStripTextBox6.Size = new Size(100, 38);
-            toolStripTextBox6.Text = "OBC";
+            oBCToolStripMenuItem.Name = "oBCToolStripMenuItem";
+            oBCToolStripMenuItem.Size = new Size(85, 38);
+            oBCToolStripMenuItem.Text = "OBC";
+            oBCToolStripMenuItem.Click += oBCToolStripMenuItem_Click;
             // 
             // MOCSpanel
             // 
@@ -193,7 +199,7 @@
             // 
             splitContainer2.Panel2.Controls.Add(groupBox3);
             splitContainer2.Size = new Size(696, 908);
-            splitContainer2.SplitterDistance = 601;
+            splitContainer2.SplitterDistance = 600;
             splitContainer2.TabIndex = 0;
             // 
             // groupBox2
@@ -201,7 +207,7 @@
             groupBox2.Dock = DockStyle.Fill;
             groupBox2.Location = new Point(0, 0);
             groupBox2.Name = "groupBox2";
-            groupBox2.Size = new Size(696, 601);
+            groupBox2.Size = new Size(696, 600);
             groupBox2.TabIndex = 0;
             groupBox2.TabStop = false;
             groupBox2.Text = "操作控制";
@@ -212,7 +218,7 @@
             groupBox3.Dock = DockStyle.Fill;
             groupBox3.Location = new Point(0, 0);
             groupBox3.Name = "groupBox3";
-            groupBox3.Size = new Size(696, 303);
+            groupBox3.Size = new Size(696, 304);
             groupBox3.TabIndex = 0;
             groupBox3.TabStop = false;
             groupBox3.Text = "诊断信息";
@@ -223,7 +229,7 @@
             MOCSdiagnose.Dock = DockStyle.Fill;
             MOCSdiagnose.Location = new Point(3, 34);
             MOCSdiagnose.Name = "MOCSdiagnose";
-            MOCSdiagnose.Size = new Size(690, 266);
+            MOCSdiagnose.Size = new Size(690, 267);
             MOCSdiagnose.TabIndex = 0;
             MOCSdiagnose.Text = "";
             // 
@@ -334,12 +340,6 @@
         #endregion
 
         private MenuStrip MOCSmenuStrip;
-        private ToolStripTextBox toolStripTextBox1;
-        private ToolStripTextBox toolStripTextBox2;
-        private ToolStripTextBox toolStripTextBox3;
-        private ToolStripTextBox toolStripTextBox4;
-        private ToolStripTextBox toolStripTextBox5;
-        private ToolStripTextBox toolStripTextBox6;
         private Panel MOCSpanel;
         private TabControl MOCStabControl;
         private TabPage tabPage1;
@@ -355,5 +355,11 @@
         private GroupBox groupBox5;
         private RichTextBox MOCSRecvMsg;
         private RichTextBox MOCSSendMsg;
+        private ToolStripMenuItem mOCSToolStripMenuItem;
+        private ToolStripMenuItem mCUToolStripMenuItem;
+        private ToolStripMenuItem lCUToolStripMenuItem;
+        private ToolStripMenuItem vSPSToolStripMenuItem;
+        private ToolStripMenuItem oBCToolStripMenuItem;
+        private ToolStripMenuItem lCUToolStripMenuItem1;
     }
 }

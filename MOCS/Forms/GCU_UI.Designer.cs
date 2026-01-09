@@ -29,25 +29,25 @@
         private void InitializeComponent()
         {
             menuStrip1 = new MenuStrip();
-            toolStripTextBox1 = new ToolStripTextBox();
-            toolStripTextBox2 = new ToolStripTextBox();
-            toolStripTextBox3 = new ToolStripTextBox();
-            toolStripTextBox4 = new ToolStripTextBox();
-            toolStripTextBox5 = new ToolStripTextBox();
-            toolStripTextBox6 = new ToolStripTextBox();
+            mOCSToolStripMenuItem = new ToolStripMenuItem();
+            mCUToolStripMenuItem = new ToolStripMenuItem();
+            lCUToolStripMenuItem = new ToolStripMenuItem();
+            gCUToolStripMenuItem = new ToolStripMenuItem();
+            vSPSToolStripMenuItem = new ToolStripMenuItem();
+            oBCToolStripMenuItem = new ToolStripMenuItem();
             tabPage2 = new TabPage();
             splitContainer1 = new SplitContainer();
+            groupBox1 = new GroupBox();
             splitContainer2 = new SplitContainer();
+            groupBox2 = new GroupBox();
             groupBox3 = new GroupBox();
             GCUdiagnose = new RichTextBox();
-            groupBox2 = new GroupBox();
-            groupBox1 = new GroupBox();
             GCUtabControl = new TabControl();
             tabPage3 = new TabPage();
             splitContainer3 = new SplitContainer();
             groupBox4 = new GroupBox();
-            groupBox5 = new GroupBox();
             GCURecvMsg = new RichTextBox();
+            groupBox5 = new GroupBox();
             GCUSendMsg = new RichTextBox();
             menuStrip1.SuspendLayout();
             tabPage2.SuspendLayout();
@@ -73,48 +73,54 @@
             // menuStrip1
             // 
             menuStrip1.ImageScalingSize = new Size(32, 32);
-            menuStrip1.Items.AddRange(new ToolStripItem[] { toolStripTextBox1, toolStripTextBox2, toolStripTextBox3, toolStripTextBox4, toolStripTextBox5, toolStripTextBox6 });
+            menuStrip1.Items.AddRange(new ToolStripItem[] { mOCSToolStripMenuItem, mCUToolStripMenuItem, lCUToolStripMenuItem, gCUToolStripMenuItem, vSPSToolStripMenuItem, oBCToolStripMenuItem });
             menuStrip1.Location = new Point(0, 0);
             menuStrip1.Name = "menuStrip1";
-            menuStrip1.Size = new Size(1894, 42);
+            menuStrip1.Size = new Size(1894, 39);
             menuStrip1.TabIndex = 0;
             menuStrip1.Text = "menuStrip1";
             // 
-            // toolStripTextBox1
+            // mOCSToolStripMenuItem
             // 
-            toolStripTextBox1.Name = "toolStripTextBox1";
-            toolStripTextBox1.Size = new Size(100, 38);
-            toolStripTextBox1.Text = "MOCS";
+            mOCSToolStripMenuItem.Name = "mOCSToolStripMenuItem";
+            mOCSToolStripMenuItem.Size = new Size(107, 38);
+            mOCSToolStripMenuItem.Text = "MOCS";
+            mOCSToolStripMenuItem.Click += mOCSToolStripMenuItem_Click;
             // 
-            // toolStripTextBox2
+            // mCUToolStripMenuItem
             // 
-            toolStripTextBox2.Name = "toolStripTextBox2";
-            toolStripTextBox2.Size = new Size(100, 38);
-            toolStripTextBox2.Text = "MCU";
+            mCUToolStripMenuItem.Name = "mCUToolStripMenuItem";
+            mCUToolStripMenuItem.Size = new Size(91, 35);
+            mCUToolStripMenuItem.Text = "MCU";
+            mCUToolStripMenuItem.Click += mCUToolStripMenuItem_Click;
             // 
-            // toolStripTextBox3
+            // lCUToolStripMenuItem
             // 
-            toolStripTextBox3.Name = "toolStripTextBox3";
-            toolStripTextBox3.Size = new Size(100, 38);
-            toolStripTextBox3.Text = "LCU";
+            lCUToolStripMenuItem.Name = "lCUToolStripMenuItem";
+            lCUToolStripMenuItem.Size = new Size(80, 35);
+            lCUToolStripMenuItem.Text = "LCU";
+            lCUToolStripMenuItem.Click += lCUToolStripMenuItem_Click;
             // 
-            // toolStripTextBox4
+            // gCUToolStripMenuItem
             // 
-            toolStripTextBox4.Name = "toolStripTextBox4";
-            toolStripTextBox4.Size = new Size(100, 38);
-            toolStripTextBox4.Text = "GCU";
+            gCUToolStripMenuItem.Name = "gCUToolStripMenuItem";
+            gCUToolStripMenuItem.Size = new Size(86, 35);
+            gCUToolStripMenuItem.Text = "GCU";
+            gCUToolStripMenuItem.Click += gCUToolStripMenuItem_Click;
             // 
-            // toolStripTextBox5
+            // vSPSToolStripMenuItem
             // 
-            toolStripTextBox5.Name = "toolStripTextBox5";
-            toolStripTextBox5.Size = new Size(100, 38);
-            toolStripTextBox5.Text = "VSPS";
+            vSPSToolStripMenuItem.Name = "vSPSToolStripMenuItem";
+            vSPSToolStripMenuItem.Size = new Size(93, 35);
+            vSPSToolStripMenuItem.Text = "VSPS";
+            vSPSToolStripMenuItem.Click += vSPSToolStripMenuItem_Click;
             // 
-            // toolStripTextBox6
+            // oBCToolStripMenuItem
             // 
-            toolStripTextBox6.Name = "toolStripTextBox6";
-            toolStripTextBox6.Size = new Size(100, 38);
-            toolStripTextBox6.Text = "OBC";
+            oBCToolStripMenuItem.Name = "oBCToolStripMenuItem";
+            oBCToolStripMenuItem.Size = new Size(85, 35);
+            oBCToolStripMenuItem.Text = "OBC";
+            oBCToolStripMenuItem.Click += oBCToolStripMenuItem_Click;
             // 
             // tabPage2
             // 
@@ -122,7 +128,7 @@
             tabPage2.Location = new Point(8, 8);
             tabPage2.Name = "tabPage2";
             tabPage2.Padding = new Padding(3);
-            tabPage2.Size = new Size(1878, 914);
+            tabPage2.Size = new Size(1878, 917);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "状态监视";
             tabPage2.UseVisualStyleBackColor = true;
@@ -140,9 +146,19 @@
             // splitContainer1.Panel2
             // 
             splitContainer1.Panel2.Controls.Add(splitContainer2);
-            splitContainer1.Size = new Size(1872, 908);
+            splitContainer1.Size = new Size(1872, 911);
             splitContainer1.SplitterDistance = 1224;
             splitContainer1.TabIndex = 0;
+            // 
+            // groupBox1
+            // 
+            groupBox1.Dock = DockStyle.Fill;
+            groupBox1.Location = new Point(0, 0);
+            groupBox1.Name = "groupBox1";
+            groupBox1.Size = new Size(1224, 911);
+            groupBox1.TabIndex = 0;
+            groupBox1.TabStop = false;
+            groupBox1.Text = "状态信息";
             // 
             // splitContainer2
             // 
@@ -158,9 +174,19 @@
             // splitContainer2.Panel2
             // 
             splitContainer2.Panel2.Controls.Add(groupBox3);
-            splitContainer2.Size = new Size(644, 908);
-            splitContainer2.SplitterDistance = 565;
+            splitContainer2.Size = new Size(644, 911);
+            splitContainer2.SplitterDistance = 566;
             splitContainer2.TabIndex = 0;
+            // 
+            // groupBox2
+            // 
+            groupBox2.Dock = DockStyle.Fill;
+            groupBox2.Location = new Point(0, 0);
+            groupBox2.Name = "groupBox2";
+            groupBox2.Size = new Size(644, 566);
+            groupBox2.TabIndex = 0;
+            groupBox2.TabStop = false;
+            groupBox2.Text = "操作控制";
             // 
             // groupBox3
             // 
@@ -168,7 +194,7 @@
             groupBox3.Dock = DockStyle.Fill;
             groupBox3.Location = new Point(0, 0);
             groupBox3.Name = "groupBox3";
-            groupBox3.Size = new Size(644, 339);
+            groupBox3.Size = new Size(644, 341);
             groupBox3.TabIndex = 0;
             groupBox3.TabStop = false;
             groupBox3.Text = "诊断信息";
@@ -179,29 +205,9 @@
             GCUdiagnose.Dock = DockStyle.Fill;
             GCUdiagnose.Location = new Point(3, 34);
             GCUdiagnose.Name = "GCUdiagnose";
-            GCUdiagnose.Size = new Size(638, 302);
+            GCUdiagnose.Size = new Size(638, 304);
             GCUdiagnose.TabIndex = 0;
             GCUdiagnose.Text = "";
-            // 
-            // groupBox2
-            // 
-            groupBox2.Dock = DockStyle.Fill;
-            groupBox2.Location = new Point(0, 0);
-            groupBox2.Name = "groupBox2";
-            groupBox2.Size = new Size(644, 565);
-            groupBox2.TabIndex = 0;
-            groupBox2.TabStop = false;
-            groupBox2.Text = "操作控制";
-            // 
-            // groupBox1
-            // 
-            groupBox1.Dock = DockStyle.Fill;
-            groupBox1.Location = new Point(0, 0);
-            groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(1224, 908);
-            groupBox1.TabIndex = 0;
-            groupBox1.TabStop = false;
-            groupBox1.Text = "状态信息";
             // 
             // GCUtabControl
             // 
@@ -209,10 +215,10 @@
             GCUtabControl.Controls.Add(tabPage2);
             GCUtabControl.Controls.Add(tabPage3);
             GCUtabControl.Dock = DockStyle.Fill;
-            GCUtabControl.Location = new Point(0, 42);
+            GCUtabControl.Location = new Point(0, 39);
             GCUtabControl.Name = "GCUtabControl";
             GCUtabControl.SelectedIndex = 0;
-            GCUtabControl.Size = new Size(1894, 967);
+            GCUtabControl.Size = new Size(1894, 970);
             GCUtabControl.TabIndex = 1;
             GCUtabControl.TabStop = false;
             // 
@@ -255,6 +261,16 @@
             groupBox4.TabStop = false;
             groupBox4.Text = "接收报文";
             // 
+            // GCURecvMsg
+            // 
+            GCURecvMsg.BackColor = SystemColors.Control;
+            GCURecvMsg.Dock = DockStyle.Fill;
+            GCURecvMsg.Location = new Point(3, 34);
+            GCURecvMsg.Name = "GCURecvMsg";
+            GCURecvMsg.Size = new Size(907, 871);
+            GCURecvMsg.TabIndex = 0;
+            GCURecvMsg.Text = "";
+            // 
             // groupBox5
             // 
             groupBox5.Controls.Add(GCUSendMsg);
@@ -265,16 +281,6 @@
             groupBox5.TabIndex = 0;
             groupBox5.TabStop = false;
             groupBox5.Text = "发送报文";
-            // 
-            // GCURecvMsg
-            // 
-            GCURecvMsg.BackColor = SystemColors.Control;
-            GCURecvMsg.Dock = DockStyle.Fill;
-            GCURecvMsg.Location = new Point(3, 34);
-            GCURecvMsg.Name = "GCURecvMsg";
-            GCURecvMsg.Size = new Size(907, 871);
-            GCURecvMsg.TabIndex = 0;
-            GCURecvMsg.Text = "";
             // 
             // GCUSendMsg
             // 
@@ -324,12 +330,6 @@
         #endregion
 
         private MenuStrip menuStrip1;
-        private ToolStripTextBox toolStripTextBox1;
-        private ToolStripTextBox toolStripTextBox2;
-        private ToolStripTextBox toolStripTextBox3;
-        private ToolStripTextBox toolStripTextBox4;
-        private ToolStripTextBox toolStripTextBox5;
-        private ToolStripTextBox toolStripTextBox6;
         private TabPage tabPage2;
         private SplitContainer splitContainer1;
         private GroupBox groupBox1;
@@ -344,5 +344,11 @@
         private RichTextBox GCURecvMsg;
         private GroupBox groupBox5;
         private RichTextBox GCUSendMsg;
+        private ToolStripMenuItem mOCSToolStripMenuItem;
+        private ToolStripMenuItem mCUToolStripMenuItem;
+        private ToolStripMenuItem lCUToolStripMenuItem;
+        private ToolStripMenuItem gCUToolStripMenuItem;
+        private ToolStripMenuItem vSPSToolStripMenuItem;
+        private ToolStripMenuItem oBCToolStripMenuItem;
     }
 }
