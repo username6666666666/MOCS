@@ -170,7 +170,7 @@ namespace MOCS.Cores.VCU
         #region 消息发送方法
         private async Task SendEMSControlMsgAsync()
         {
-            var sequenceNum = _sequenceManager.GetNextSequence(PacketCategory.C);
+            var sequenceNum = _sequenceManager.GetNextSequenceNum(PacketCategory.C);
             EMSControlMsg msg = new()
             {
                 SequenceNumber = sequenceNum,
@@ -185,7 +185,7 @@ namespace MOCS.Cores.VCU
 
         private async Task SendOBCControlMsgAsync()
         {
-            var sequenceNum = _sequenceManager.GetNextSequence(PacketCategory.F);
+            var sequenceNum = _sequenceManager.GetNextSequenceNum(PacketCategory.F);
             OBCMsg msg = new()
             {
                 SequenceNumber = sequenceNum,

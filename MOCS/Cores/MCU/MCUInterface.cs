@@ -1,7 +1,10 @@
 using System;
+using System.Buffers.Binary;
 using System.Net;
 using MOCS.Coms;
 using MOCS.Protocals;
+using MOCS.Protocals.Propulsion.MCUToMOCS;
+using MOCS.Protocals.Propulsion.MOCSToMCU;
 using MOCS.Protocals.VehicleControl.VehicleToMOCS;
 using MOCS.Utils;
 using NLog;
@@ -69,9 +72,9 @@ namespace MOCS.Cores.MCU
                 MCUInterfaceState.Stop
             );
             _mcuStateChangeMonitorSM = new StateMachine<
-                MCUStateChangeMonitorStates,
-                MCUStateChangeMonitorTriggers
-            >(MCUStateChangeMonitorStates.Stop);
+                MCUStateChangeMonitorState,
+                MCUStateChangeMonitorTrigger
+            >(MCUStateChangeMonitorState.Stop);
             _changeMCUStateTrigger = _mcuInterfaceSM.SetTriggerParameters<MCUStateChangeCommand>(
                 MCUInterfaceTrigger.ChangeMCUState
             );
@@ -79,10 +82,13 @@ namespace MOCS.Cores.MCU
                 new TimeSpan(0, 0, 3),
                 MCULifeCycleSendTimeOut
             );
-            _mcuLifeCycleRecTimer = new HighPrecisionTimer(
+            _mcuLifeCycleRecvTimer = new HighPrecisionTimer(
                 new TimeSpan(0, 0, 5),
-                MCULifeCycleRevTimeOut
+                MCULifeCycleRecvTimeOut
             );
+
+            _sequenceManager = new SequenceManager<ushort>(ushort.MaxValue);
+
             _mcuDesState = MCUInterfaceState.Initial;
             ConfigMCUInterfaceStateMachine();
             ConfigPCSMonitorStateMachine();
@@ -113,8 +119,11 @@ namespace MOCS.Cores.MCU
             // 离开时，如果目标状态为“关闭状态”，则停止通信
             _mcuInterfaceSM
                 .Configure(MCUInterfaceState.UnConnected)
-                .OnEntry(SendLifeCycleMessage)
-                .InternalTransition(MCUInterfaceTrigger.MOCSLifeCycleMsgSend, SendLifeCycleMessage)
+                .OnEntryAsync(SendMOCSStatusMsgAsync)
+                .InternalTransitionAsync(
+                    MCUInterfaceTrigger.MOCSLifeCycleMsgSend,
+                    SendMOCSStatusMsgAsync
+                )
                 .Permit(MCUInterfaceTrigger.MCULifeCycleMsgRecvd, MCUInterfaceState.Connected)
                 .Permit(MCUInterfaceTrigger.Deactivate, MCUInterfaceState.Stop)
                 .OnExitAsync(async t =>
@@ -135,16 +144,25 @@ namespace MOCS.Cores.MCU
             // 离开时，关闭生命周期报文接收超时定时器
             _mcuInterfaceSM
                 .Configure(MCUInterfaceState.Connected)
-                .OnEntry(t => ConfigureTimer(true, _mcuLifeCycleRecTimer))
+                .OnEntry(t => ConfigureTimer(true, _mcuLifeCycleRecvTimer))
                 .InitialTransition(MCUInterfaceState.UnKnown)
-                .InternalTransition(MCUInterfaceTrigger.MOCSLifeCycleMsgSend, SendLifeCycleMessage)
+                .InternalTransitionAsync(
+                    MCUInterfaceTrigger.MOCSLifeCycleMsgSend,
+                    SendMOCSStatusMsgAsync
+                )
                 .PermitIf(
                     MCUInterfaceTrigger.MCULifeCycleMsgRecvTimeOut,
                     MCUInterfaceState.UnConnected,
                     () => IsLifeCycleRecTimeOutBeyondLimits
                 )
                 .Permit(MCUInterfaceTrigger.Deactivate, MCUInterfaceState.Stop)
-                .OnExitAsync(StopCommunicate);
+                .OnExitAsync(async t =>
+                {
+                    if (t.Destination == MCUInterfaceState.Stop)
+                    {
+                        await StopCommunicate();
+                    }
+                });
 
             // -----------连接状态-------------
             // 配置为“连接状态”的子状态
@@ -194,7 +212,7 @@ namespace MOCS.Cores.MCU
             // 牵引系统状态转换完成事件触发时，转移至与转换命令对应的状态
             // 离开时，关闭牵引系统状态转换监视
             _mcuInterfaceSM
-                .Configure(MCUInterfaceState.StandbyWithCharged)
+                .Configure(MCUInterfaceState.HotStandby)
                 .SubstateOf(MCUInterfaceState.Connected)
                 .InternalTransition(
                     _changeMCUStateTrigger,
@@ -206,7 +224,7 @@ namespace MOCS.Cores.MCU
             // -----------准备测试状态-------------
             // 配置为“连接状态”的子状态
             _mcuInterfaceSM
-                .Configure(MCUInterfaceState.PreparedToTest)
+                .Configure(MCUInterfaceState.ReadyForTest)
                 .SubstateOf(MCUInterfaceState.Connected);
 
             // -----------带电牵引测试状态-------------
@@ -215,7 +233,7 @@ namespace MOCS.Cores.MCU
             // 牵引系统状态转换完成事件触发时，转移至“基本状态”
             // 离开时，关闭牵引系统状态转换监视
             _mcuInterfaceSM
-                .Configure(MCUInterfaceState.PropulsionTestWithCharged)
+                .Configure(MCUInterfaceState.HotTractionTest)
                 .SubstateOf(MCUInterfaceState.Connected)
                 .InternalTransition(
                     MCUInterfaceTrigger.ChangeMCUState,
@@ -230,7 +248,7 @@ namespace MOCS.Cores.MCU
             // 牵引系统状态转换完成事件触发时，转移至“基本状态”
             // 离开时，关闭牵引系统状态转换监视
             _mcuInterfaceSM
-                .Configure(MCUInterfaceState.PropulsionTestWithNoCharged)
+                .Configure(MCUInterfaceState.DeadTractionTest)
                 .SubstateOf(MCUInterfaceState.Connected)
                 .InternalTransition(
                     MCUInterfaceTrigger.ChangeMCUState,
@@ -252,13 +270,19 @@ namespace MOCS.Cores.MCU
             _mcuInterfaceSM
                 .Configure(MCUInterfaceState.MaglevFrameRunning)
                 .SubstateOf(MCUInterfaceState.Connected)
-                .InternalTransition(MCUInterfaceTrigger.MaglevFrameLoginIn, SendMaglevFrameLoginMsg)
-                .InternalTransition(
-                    MCUInterfaceTrigger.MaglevFrameSignOut,
-                    SendMaglevFrameSignOutMsg
+                .InternalTransitionAsync(
+                    MCUInterfaceTrigger.MaglevVehicleLoginIn,
+                    SendLogInMaglevVehicleMsgAsync
+                )
+                .InternalTransitionAsync(
+                    MCUInterfaceTrigger.MaglevVehicleSignOut,
+                    SendLogOutMaglevVehicleMsgAsync
                 )
                 .InternalTransition(MCUInterfaceTrigger.TransmitTrackData, SendTransmitTrackDataMsg)
-                .InternalTransition(MCUInterfaceTrigger.DeleteTrackData, SendDeleteTrackDataMsg)
+                .InternalTransitionAsync(
+                    MCUInterfaceTrigger.DeleteTrackData,
+                    SendRemoveTrackDataMsgAsync
+                )
                 .InternalTransition(
                     MCUInterfaceTrigger.TransmitMaximumCurve,
                     SendTransmitTrackDataMsg
@@ -275,22 +299,19 @@ namespace MOCS.Cores.MCU
         private void ConfigPCSMonitorStateMachine()
         {
             _mcuStateChangeMonitorSM
-                .Configure(MCUStateChangeMonitorStates.Stop)
+                .Configure(MCUStateChangeMonitorState.Stop)
                 .Permit(
-                    MCUStateChangeMonitorTriggers.Activate,
-                    MCUStateChangeMonitorStates.Unchanged
+                    MCUStateChangeMonitorTrigger.Activate,
+                    MCUStateChangeMonitorState.Unchanged
                 );
 
             _mcuStateChangeMonitorSM
-                .Configure(MCUStateChangeMonitorStates.Unchanged)
+                .Configure(MCUStateChangeMonitorState.Unchanged)
                 .OnEntry(t => SendChangeMCUStateMsg(_mcuDesState))
-                .Permit(
-                    MCUStateChangeMonitorTriggers.Executed,
-                    MCUStateChangeMonitorStates.Changed
-                );
+                .Permit(MCUStateChangeMonitorTrigger.Executed, MCUStateChangeMonitorState.Changed);
 
             _mcuStateChangeMonitorSM
-                .Configure(MCUStateChangeMonitorStates.Changed)
+                .Configure(MCUStateChangeMonitorState.Changed)
                 .OnEntry(OnMCUStateHasChanged);
         }
 
@@ -311,29 +332,23 @@ namespace MOCS.Cores.MCU
 
         private void ConfigMsgParsers()
         {
-            //_udpMsgSevice?.RegisterParser((byte)0x81, EMSStatusMsgA.Parse);
-            //_udpMsgSevice?.RegisterParser((byte)0x82, EMSStatusMsgB.Parse);
-            //_udpMsgSevice?.RegisterRangeParser((byte)0xE1, (byte)0xEF, VSPSStatusMsg.Parse);
-            //_udpMsgSevice?.RegisterRangeParser((byte)0xF1, (byte)0xFF, OBCStatusMsg.Parse);
+            _udpMsgSevice?.RegisterParser(0x81, MCUStatusMsg.Parse);
+            _udpMsgSevice?.RegisterParser(0x82, MCUReplyMsg.Parse);
         }
 
         private void ConfigMsgHandlers()
         {
-            //_udpMsgSevice?.Subscribe<EMSStatusMsgA>(OnRecvEMSStatusMsgA);
-            //_udpMsgSevice?.Subscribe<EMSStatusMsgB>(OnRecvEMSStatusMsgB);
-            //_udpMsgSevice?.Subscribe<VSPSStatusMsg>(OnRecvVSPSStatusMsg);
+            _udpMsgSevice?.Subscribe<MCUStatusMsg>(OnRecvMCUStatusMsg);
+            _udpMsgSevice?.Subscribe<MCUReplyMsg>(OnRecvMCUReplyMsg);
         }
 
         #endregion
 
         private void InitStatus()
         {
-            ConfigureTimer(false, _mcuLifeCycleSendTimer);
+            MCUStatusField.Reset();
+            MCUReplyField.Reset();
         }
-
-        private void SendLifeCycleMessage() { }
-
-        private void SendChangeMCUStateMsg(MCUInterfaceState destinationState) { }
 
         //private void setDeleteMCUStateChangeAlreadyFlag(bool flag)
         //{
@@ -373,14 +388,14 @@ namespace MOCS.Cores.MCU
 
         private void ActivateMCUStateChangeMonitior()
         {
-            _mcuStateChangeMonitorSM.Fire(MCUStateChangeMonitorTriggers.Activate);
+            _mcuStateChangeMonitorSM.Fire(MCUStateChangeMonitorTrigger.Activate);
         }
 
         private void DeactivateMCUStateChangeMonitor()
         {
-            if (_mcuStateChangeMonitorSM.CanFire(MCUStateChangeMonitorTriggers.Deactivate))
+            if (_mcuStateChangeMonitorSM.CanFire(MCUStateChangeMonitorTrigger.Deactivate))
             {
-                _mcuStateChangeMonitorSM.Fire(MCUStateChangeMonitorTriggers.Deactivate);
+                _mcuStateChangeMonitorSM.Fire(MCUStateChangeMonitorTrigger.Deactivate);
             }
         }
 
@@ -410,15 +425,15 @@ namespace MOCS.Cores.MCU
                     break;
 
                 case MCUStateChangeCommand.PT:
-                    _mcuDesState = MCUInterfaceState.PropulsionTestWithNoCharged;
+                    _mcuDesState = MCUInterfaceState.DeadTractionTest;
                     break;
 
                 case MCUStateChangeCommand.PTP:
-                    _mcuDesState = MCUInterfaceState.PropulsionTestWithCharged;
+                    _mcuDesState = MCUInterfaceState.HotTractionTest;
                     break;
 
                 case MCUStateChangeCommand.PWSP:
-                    _mcuDesState = MCUInterfaceState.StandbyWithCharged;
+                    _mcuDesState = MCUInterfaceState.HotStandby;
                     break;
 
                 default:
@@ -439,7 +454,7 @@ namespace MOCS.Cores.MCU
                     break;
 
                 case MCUStateChangeCommand.PPT:
-                    _mcuDesState = MCUInterfaceState.PreparedToTest;
+                    _mcuDesState = MCUInterfaceState.ReadyForTest;
                     break;
 
                 default:
@@ -483,8 +498,8 @@ namespace MOCS.Cores.MCU
             );
             ConfigMsgParsers();
             ConfigMsgHandlers();
-            ConfigureTimer(true, _mcuLifeCycleSendTimer);
             _udpMsgSevice.StartListening();
+            ConfigureTimer(true, _mcuLifeCycleSendTimer);
             SysLogger.Info($"开始监听端口: {LocalPort}");
         }
 
@@ -503,37 +518,177 @@ namespace MOCS.Cores.MCU
             _mcuInterfaceSM.Fire(MCUInterfaceTrigger.MOCSLifeCycleMsgSend);
         }
 
-        private void MCULifeCycleRevTimeOut()
+        private void MCULifeCycleRecvTimeOut()
         {
-            _mcuLifeCycleRecTimeOutCounts++;
-            if (_mcuLifeCycleRecTimeOutCounts >= 2)
+            _mcuLifeCycleRecvTimeOutCounts++;
+            if (_mcuLifeCycleRecvTimeOutCounts >= 2)
             {
                 IsLifeCycleRecTimeOutBeyondLimits = true;
                 _mcuInterfaceSM.Fire(MCUInterfaceTrigger.MCULifeCycleMsgRecvTimeOut);
             }
         }
 
-        private void SendMaglevFrameLoginMsg() { }
+        #region 私有报文发送方法
+        private async Task SendMOCSStatusMsgAsync()
+        {
+            var sequenceNum = _sequenceManager.GetNextSequenceNum(PacketCategory.B);
+            MOCSStatusMsg msg = new()
+            {
+                SequenceNumber = sequenceNum,
+                UserData = MOCSStatusField.ToByteArray(),
+            };
+            if (_udpMsgSevice != null)
+            {
+                await _udpMsgSevice.SendAsync(msg);
+            }
+        }
 
-        private void SendMaglevFrameSignOutMsg() { }
+        private void SendChangeMCUStateMsg(MCUInterfaceState destinationState) { }
+
+        private async Task SendLogInMaglevVehicleMsgAsync()
+        {
+            var sequenceNum = _sequenceManager.GetNextSequenceNum(PacketCategory.A);
+            LogInMaglevVehicleMsg msg = new()
+            {
+                SequenceNumber = sequenceNum,
+                UserData = MaglevVehicleLoginField.ToByteArray(),
+            };
+            if (_udpMsgSevice != null)
+            {
+                await _udpMsgSevice.SendAsync(msg);
+            }
+        }
+
+        private async Task SendLogOutMaglevVehicleMsgAsync()
+        {
+            var sequenceNum = _sequenceManager.GetNextSequenceNum(PacketCategory.A);
+            LogInMaglevVehicleMsg msg = new()
+            {
+                SequenceNumber = sequenceNum,
+                UserData = MaglevVehicleLogOutField.ToByteArray(),
+            };
+            if (_udpMsgSevice != null)
+            {
+                await _udpMsgSevice.SendAsync(msg);
+            }
+        }
 
         private void SendTransmitTrackDataMsg() { }
 
-        private void SendDeleteTrackDataMsg() { }
+        private async Task SendRemoveTrackDataMsgAsync()
+        {
+            var sequenceNum = _sequenceManager.GetNextSequenceNum(PacketCategory.A);
+            RemoveTrackDataMsg msg = new()
+            {
+                SequenceNumber = sequenceNum,
+                UserData = RemoveTrackDataField.ToByteArray(),
+            };
+            if (_udpMsgSevice != null)
+            {
+                await _udpMsgSevice.SendAsync(msg);
+            }
+        }
+
+        private async Task SendRequestParkingPointStatusMsgAsync()
+        {
+            var sequenceNum = _sequenceManager.GetNextSequenceNum(PacketCategory.A);
+            RequestParkingPointStatusMsg msg = new()
+            {
+                SequenceNumber = sequenceNum,
+                UserData = RequestParkingPointStatusField.ToByteArray(),
+            };
+            if (_udpMsgSevice != null)
+            {
+                await _udpMsgSevice.SendAsync(msg);
+            }
+        }
+
+        private async Task SendStepParkingPointMsgAsync()
+        {
+            var sequenceNum = _sequenceManager.GetNextSequenceNum(PacketCategory.A);
+            StepParkingPointMsg msg = new()
+            {
+                SequenceNumber = sequenceNum,
+                UserData = StepParkingPointField.ToByteArray(),
+            };
+            if (_udpMsgSevice != null)
+            {
+                await _udpMsgSevice.SendAsync(msg);
+            }
+        }
 
         private void SendTransmitMaximumCurveMsg() { }
 
         private void SendDeleteTranmitMaximumCurveMsg() { }
+        #endregion
 
-        public IPAddress LocalIpAddress { get; set; } = IPAddress.Parse("127.0.0.1");
+        #region 私有报文处理方法
+
+        private void OnRecvMCUStatusMsg(MCUStatusMsg msg)
+        {
+            var data = msg.UserData.Span;
+
+            MCUStatusField.Channel1RecvStatus = (ChannelRecvStatusEnum)(data[0] & 0x3F);
+            MCUStatusField.Channel2RecvStatus = (ChannelRecvStatusEnum)(data[2] & 0x3F);
+            MCUStatusField.MCUSendReason = (MCUSendReasonEnum)data[4];
+            MCUStatusField.MsgNumToRepeat = data[5];
+            MCUStatusField.A_SequenceNumRefPoint = BinaryPrimitives.ReadUInt16LittleEndian(
+                data.Slice(6, 2)
+            );
+            MCUStatusField.MCUStatusChangeReadinessInfo = (MCUStatusChangeReadinessInfoEnum)(
+                data[8] & 0x07
+            );
+            MCUStatusField.CurrentMaglevVehicleIdentifier = data[9];
+            MCUStatusField.ClearCurrentMaglevVehicleReadinessInfo =
+                (ClearMaglevVehicleReadinessInfoEnum)(data[10] & 0x03);
+            MCUStatusField.DCSNum = data[11];
+            MCUStatusField.CurrentMaglevVehiclePos = BinaryPrimitives.ReadInt32LittleEndian(
+                data.Slice(12, 4)
+            );
+            MCUStatusField.CurrentMaglevVehicleVelocity = BinaryPrimitives.ReadInt16LittleEndian(
+                data.Slice(16, 2)
+            );
+            MCUStatusField.CurrentMaglevVehicleAcc = BinaryPrimitives.ReadInt16LittleEndian(
+                data.Slice(18, 2)
+            );
+            MCUStatusField.TractionCapacityForCurrentVehicle = data[20];
+            MCUStatusField.CurrentMaglevVehicleSPRStatus = (CurrentMaglevVehicleSPRStatusEnum)(
+                data[21] & 0x0F
+            );
+            MCUStatusField.VirtualMaglevVehicleIdentifier = data[22];
+            MCUStatusField.ClearVirtualMaglevVehicleReadinessInfo =
+                (ClearMaglevVehicleReadinessInfoEnum)(data[23] & 0x03);
+            MCUStatusField.TractionCapacityForVirtualVehicle = data[24];
+            MCUStatusField.MCUFaultStatus = (MCUFaultStatusEnum)data[25];
+            MCUStatusField.ParkingPointsNum = data[26];
+            // TODO: 对“当前”悬浮架的5个停车点运行的调试信息
+            // TODO: 对“虚拟”悬浮架的5个停车点运行的调试信息
+        }
+
+        private void OnRecvMCUReplyMsg(MCUReplyMsg msg)
+        {
+            var data = msg.UserData.Span;
+
+            MCUReplyField.Channel1RecvStatus = (ChannelRecvStatusEnum)(data[0] & 0x3F);
+            MCUReplyField.Channel2RecvStatus = (ChannelRecvStatusEnum)(data[2] & 0x3F);
+            MCUReplyField.MCUReplyErrorIdentifier = (MCUReplyErrorIdentifierEnum)data[4];
+            MCUReplyField.MsgNumToRepeat = data[5];
+            MCUReplyField.MCUProcessStatus = (MCUProcessStatusEnum)data[6];
+            MCUReplyField.ResponseMsgId = data[7];
+            // TODO: 请求相关的其他数据
+        }
+
+        #endregion
+
+        public IPAddress LocalIpAddress { get; set; } = IPAddress.Parse("192.168.43.2");
         public int LocalPort { get; set; } = 6002;
         public IPAddress RemoteIpAddress { get; set; } = IPAddress.Parse("192.168.43.5");
         public int RemotePort { get; set; } = 8008;
 
         private readonly StateMachine<MCUInterfaceState, MCUInterfaceTrigger> _mcuInterfaceSM;
         private readonly StateMachine<
-            MCUStateChangeMonitorStates,
-            MCUStateChangeMonitorTriggers
+            MCUStateChangeMonitorState,
+            MCUStateChangeMonitorTrigger
         > _mcuStateChangeMonitorSM;
 
         private StateMachine<
@@ -542,12 +697,25 @@ namespace MOCS.Cores.MCU
         >.TriggerWithParameters<MCUStateChangeCommand> _changeMCUStateTrigger;
         private MCUInterfaceState _mcuDesState;
 
-        private HighPrecisionTimer _mcuLifeCycleSendTimer;
-        private HighPrecisionTimer _mcuLifeCycleRecTimer;
+        private readonly HighPrecisionTimer _mcuLifeCycleSendTimer;
+        private readonly HighPrecisionTimer _mcuLifeCycleRecvTimer;
+        private int _mcuLifeCycleRecvTimeOutCounts = 0;
 
         private UdpMessageService<BaseMessage>? _udpMsgSevice;
 
-        private int _mcuLifeCycleRecTimeOutCounts = 0;
+        private SequenceManager<ushort> _sequenceManager;
+
+        public MOCSStatus MOCSStatusField { get; set; } = new MOCSStatus();
+        public LogInMaglevVehicle MaglevVehicleLoginField { get; set; } = new LogInMaglevVehicle();
+        public LogOutMaglevVehicle MaglevVehicleLogOutField { get; set; } =
+            new LogOutMaglevVehicle();
+        public RemoveTrackData RemoveTrackDataField { get; set; } = new RemoveTrackData();
+        public RequestParkingPointStatus RequestParkingPointStatusField { get; set; } =
+            new RequestParkingPointStatus();
+
+        public MCUStatus MCUStatusField { get; set; } = new MCUStatus();
+        public MCUReply MCUReplyField { get; set; } = new MCUReply();
+        public StepParkingPoint StepParkingPointField { get; set; } = new StepParkingPoint();
 
         // 日志记录器
         private readonly ILogger SysLogger;

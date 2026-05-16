@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace MOCS.Protocals.Propulsion.MOCSToMCU
 {
-    public sealed class MOCSStatusMsg : BaseSendMsg { }
+    public sealed class MOCSStatusMsg : BaseSendMsg
+    {
+        public MOCSStatusMsg()
+        {
+            MsgId = 0x01;
+        }
+    }
 }
