@@ -705,7 +705,7 @@ namespace MOCS.Cores.MCU
 
         private SequenceManager<ushort> _sequenceManager;
 
-        public MOCSStatus MOCSStatusField { get; set; } = new MOCSStatus();
+        public MOCSStatus MOCSStatusField { get; set; } = MOCSStatus.Instance;
         public LogInMaglevVehicle MaglevVehicleLoginField { get; set; } = new LogInMaglevVehicle();
         public LogOutMaglevVehicle MaglevVehicleLogOutField { get; set; } =
             new LogOutMaglevVehicle();
@@ -713,7 +713,7 @@ namespace MOCS.Cores.MCU
         public RequestParkingPointStatus RequestParkingPointStatusField { get; set; } =
             new RequestParkingPointStatus();
 
-        public MCUStatus MCUStatusField { get; set; } = new MCUStatus();
+        public MCUStatus MCUStatusField { get; set; } = MCUStatus.Instance;
         public MCUReply MCUReplyField { get; set; } = new MCUReply();
         public StepParkingPoint StepParkingPointField { get; set; } = new StepParkingPoint();
 

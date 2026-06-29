@@ -360,18 +360,19 @@ namespace MOCS.Cores.VCU
 
         public static byte LCUNum { get; } = 6;
         public static byte GCUNum { get; } = 6;
+        // LCU/GCU 状态共享同一个 EMSStatus 单例（UI 层统一显示）
         public EMSStatus[] LCUStatusCollection { get; } =
-            new EMSStatus[] { new(), new(), new(), new(), new(), new() };
+            Enumerable.Repeat(EMSStatus.Instance, LCUNum).ToArray();
         public EMSStatus[] GCUStatusCollection { get; } =
-            new EMSStatus[] { new(), new(), new(), new(), new(), new() };
+            Enumerable.Repeat(EMSStatus.Instance, GCUNum).ToArray();
 
         public static byte VSPSNums { get; } = 1;
-        public VSPSInfo VSPSInfoCollection { get; } = new();
+        public VSPSInfo VSPSInfoCollection { get; } = VSPSInfo.Instance;
 
         public EMSControl EMSControlField { get; set; } = new EMSControl();
         public OBCControl SendOBCControlField { get; set; } = new OBCControl();
         public OBCControl FeedBackOBCControlField { get; set; } = new OBCControl();
-        public OBCStatus OBCStatusField { get; set; } = new OBCStatus();
+        public OBCStatus OBCStatusField { get; set; } = OBCStatus.Instance;
 
         // 日志记录器
         private readonly ILogger SysLogger;

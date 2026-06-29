@@ -1,58 +1,157 @@
-﻿using MOCS.Utils;
+﻿using MOCS.Cores.VCU;
+using MOCS.Utils;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace MOCS.Forms
 {
     public partial class VSPS_UI : Form
     {
+        #region 私有字段（使用单例）
+        private readonly VSPSInfo _vspsInfo = VSPSInfo.Instance;
+        #endregion
+
+        #region 构造函数
         public VSPS_UI()
         {
             InitializeComponent();
+            // 绑定窗体生命周期事件
+            this.Load += VSPS_UI_Load;
+            this.FormClosed += VSPS_UI_FormClosed;
+            // 初始化UI显示
+            InitVspsUI();
+        }
+        #endregion
+
+        #region 窗体生命周期事件
+        private void VSPS_UI_Load(object sender, EventArgs e)
+        {
+            _vspsInfo.PropertyChanged += VspsInfo_PropertyChanged;
         }
 
-        #region ToolStripMenuItem 点击事件（所有菜单项）
-        // 点击 MOCS 菜单项 → 打开/置顶主窗口
-        private void mOCSToolStripMenuItem_Click(object sender, EventArgs e)
+        private void VSPS_UI_FormClosed(object sender, FormClosedEventArgs e)
         {
-            FormManager.OpenOrBringToFront<MOCS_UI>();
+            _vspsInfo.PropertyChanged -= VspsInfo_PropertyChanged;
+        }
+        #endregion
+
+        #region 初始化
+        private void InitVspsUI()
+        {
+            UpdateLifeUI();
+            UpdateDirectionUI();
+            UpdateSpeedUI();
+            UpdateRelativePosUI();
+        }
+        #endregion
+
+        #region 属性变更分发（switch模式）
+        private void VspsInfo_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(VSPSInfo.Life):
+                    UpdateLifeUI();
+                    break;
+                case nameof(VSPSInfo.Forward):
+                    UpdateDirectionUI();
+                    break;
+                case nameof(VSPSInfo.Speed):
+                    UpdateSpeedUI();
+                    break;
+                case nameof(VSPSInfo.RelativePos):
+                    UpdateRelativePosUI();
+                    break;
+            }
+        }
+        #endregion
+
+        #region 通用UI更新工具方法
+        /// <summary>
+        /// 线程安全更新Label文本
+        /// </summary>
+        private void UpdateLabel(Label label, string text)
+        {
+            if (label.InvokeRequired)
+            {
+                label.Invoke(new Action(() => label.Text = text));
+            }
+            else
+            {
+                label.Text = text;
+            }
         }
 
-        // 点击 MCU 菜单项 → 打开/置顶自身
-        private void mCUToolStripMenuItem_Click(object sender, EventArgs e)
+        /// <summary>
+        /// 线程安全更新Panel颜色（True=绿, False=红）
+        /// </summary>
+        private void UpdatePanel(Panel panel, bool isTrue)
         {
-            FormManager.OpenOrBringToFront<MCU_UI>();
+            if (panel.InvokeRequired)
+            {
+                panel.Invoke(new Action(() => panel.BackColor = isTrue ? Color.LimeGreen : Color.Red));
+            }
+            else
+            {
+                panel.BackColor = isTrue ? Color.LimeGreen : Color.Red;
+            }
         }
 
-        // 点击 LCU 菜单项 → 打开/置顶LCU_UI
-        private void lCUToolStripMenuItem_Click(object sender, EventArgs e)
+        /// <summary>
+        /// 线程安全更新Panel颜色（True=红, False=绿），用于故障指示
+        /// </summary>
+        private void UpdatePanelReverse(Panel panel, bool isTrue)
         {
-            FormManager.OpenOrBringToFront<LCU_UI>();
+            UpdatePanel(panel, !isTrue);
+        }
+        #endregion
+
+        #region UI更新方法
+        private void UpdateLifeUI()
+        {
+            UpdateLabel(lblLifeCycle, _vspsInfo.Life.ToString());
         }
 
-        // 点击 GCU 菜单项 → 打开/置顶GCU_UI
-        private void gCUToolStripMenuItem_Click(object sender, EventArgs e)
+        private void UpdateDirectionUI()
         {
-            FormManager.OpenOrBringToFront<GCU_UI>();
+            UpdateLabel(lblDirection, _vspsInfo.Forward ? "正向" : "反向");
         }
 
-        // 点击 VSPS 菜单项 → 打开/置顶VSPS_UI
-        private void vSPSToolStripMenuItem_Click(object sender, EventArgs e)
+        private void UpdateSpeedUI()
         {
-            FormManager.OpenOrBringToFront<VSPS_UI>();
+            UpdateLabel(lblSpeed, $"{_vspsInfo.Speed} cm/s");
         }
 
-        // 点击 OBC 菜单项 → 打开/置顶OBC_UI
-        private void oBCToolStripMenuItem_Click(object sender, EventArgs e)
+        private void UpdateRelativePosUI()
         {
-            FormManager.OpenOrBringToFront<OBC_UI>();
+            UpdateLabel(lblRelaPos, $"{_vspsInfo.RelativePos} mm");
+        }
+        #endregion
+
+        #region 子系统窗口流转
+        private void mOCSToolStripMenuItem_Click(object sender, EventArgs e) => FormManager.OpenOrBringToFront<MOCS_UI>();
+        private void mCUToolStripMenuItem_Click(object sender, EventArgs e) => FormManager.OpenOrBringToFront<MCU_UI>();
+        private void lCUToolStripMenuItem_Click(object sender, EventArgs e) => FormManager.OpenOrBringToFront<LCU_UI>();
+        private void gCUToolStripMenuItem_Click(object sender, EventArgs e) => FormManager.OpenOrBringToFront<GCU_UI>();
+        private void vSPSToolStripMenuItem_Click(object sender, EventArgs e) => FormManager.OpenOrBringToFront<VSPS_UI>();
+        private void oBCToolStripMenuItem_Click(object sender, EventArgs e) => FormManager.OpenOrBringToFront<OBC_UI>();
+        #endregion
+
+        #region 调试测试按钮
+        private void button1_Click(object sender, EventArgs e)
+        {
+            _vspsInfo.Forward = !_vspsInfo.Forward;
+
+            if (_vspsInfo.RelativePos + 10 > ushort.MaxValue)
+            {
+                _vspsInfo.RelativePos = 0;
+            }
+            else
+            {
+                _vspsInfo.RelativePos += 10;
+            }
         }
         #endregion
     }

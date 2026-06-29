@@ -1,9 +1,51 @@
 using System.Buffers.Binary;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace MOCS.Cores.MCU
 {
-    public class MOCSStatus
+    public class MOCSStatus:INotifyPropertyChanged
     {
+        #region 单例模式
+        private static readonly MOCSStatus _instance = new MOCSStatus();
+        public static MOCSStatus Instance => _instance;
+        
+        /// <summary>
+        /// 私有构造函数，防止外部 new
+        /// </summary>
+        private MOCSStatus() { }
+        #endregion
+        
+        #region 私有字段
+
+        #endregion
+
+        #region 接口实现（属性变更通知核心）
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        /// <summary>
+        /// 通用字段设置+通知方法（减少重复代码）
+        /// </summary>
+        /// <typeparam name="T">字段类型</typeparam>
+        /// <param name="field">字段引用</param>
+        /// <param name="value">新值</param>
+        /// <param name="propertyName">属性名（自动获取）</param>
+        protected virtual void SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+        {
+            if (!EqualityComparer<T>.Default.Equals(field, value))
+            {
+                field = value;
+                OnPropertyChanged(propertyName);
+            }
+        }
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+        #endregion
+
+        #region 公共属性
         /// <summary>
         /// 接收通道1状态
         /// </summary>
@@ -85,6 +127,7 @@ namespace MOCS.Cores.MCU
         /// 诊断信息
         /// </summary>
         public DiagnosticInfoEnum DiagnosticInfo { get; set; } = DiagnosticInfoEnum.None;
+        #endregion
 
         public void Reset()
         {

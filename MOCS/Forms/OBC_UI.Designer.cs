@@ -187,42 +187,42 @@
             // mOCSToolStripMenuItem
             // 
             mOCSToolStripMenuItem.Name = "mOCSToolStripMenuItem";
-            mOCSToolStripMenuItem.Size = new Size(107, 35);
+            mOCSToolStripMenuItem.Size = new Size(107, 38);
             mOCSToolStripMenuItem.Text = "MOCS";
             mOCSToolStripMenuItem.Click += mOCSToolStripMenuItem_Click;
             // 
             // mCUToolStripMenuItem
             // 
             mCUToolStripMenuItem.Name = "mCUToolStripMenuItem";
-            mCUToolStripMenuItem.Size = new Size(91, 35);
+            mCUToolStripMenuItem.Size = new Size(91, 38);
             mCUToolStripMenuItem.Text = "MCU";
             mCUToolStripMenuItem.Click += mCUToolStripMenuItem_Click;
             // 
             // lCUToolStripMenuItem
             // 
             lCUToolStripMenuItem.Name = "lCUToolStripMenuItem";
-            lCUToolStripMenuItem.Size = new Size(80, 35);
+            lCUToolStripMenuItem.Size = new Size(80, 38);
             lCUToolStripMenuItem.Text = "LCU";
             lCUToolStripMenuItem.Click += lCUToolStripMenuItem_Click;
             // 
             // gCUToolStripMenuItem
             // 
             gCUToolStripMenuItem.Name = "gCUToolStripMenuItem";
-            gCUToolStripMenuItem.Size = new Size(86, 35);
+            gCUToolStripMenuItem.Size = new Size(86, 38);
             gCUToolStripMenuItem.Text = "GCU";
             gCUToolStripMenuItem.Click += gCUToolStripMenuItem_Click;
             // 
             // vSPSToolStripMenuItem
             // 
             vSPSToolStripMenuItem.Name = "vSPSToolStripMenuItem";
-            vSPSToolStripMenuItem.Size = new Size(93, 35);
+            vSPSToolStripMenuItem.Size = new Size(93, 38);
             vSPSToolStripMenuItem.Text = "VSPS";
             vSPSToolStripMenuItem.Click += vSPSToolStripMenuItem_Click;
             // 
             // oBCToolStripMenuItem
             // 
             oBCToolStripMenuItem.Name = "oBCToolStripMenuItem";
-            oBCToolStripMenuItem.Size = new Size(85, 35);
+            oBCToolStripMenuItem.Size = new Size(85, 38);
             oBCToolStripMenuItem.Text = "OBC";
             oBCToolStripMenuItem.Click += oBCToolStripMenuItem_Click;
             // 
@@ -314,7 +314,6 @@
             gbOthers.Size = new Size(1244, 150);
             gbOthers.TabIndex = 0;
             gbOthers.TabStop = false;
-            gbOthers.Enter += OthergroupBox_Enter;
             // 
             // tableLayoutPanel4
             // 
@@ -586,7 +585,6 @@
             label1.TabIndex = 0;
             label1.Text = "440V蓄电池输出合闸指示";
             label1.TextAlign = ContentAlignment.TopCenter;
-            label1.Click += label1_Click;
             // 
             // label3
             // 
@@ -607,7 +605,6 @@
             pnlIsPowerSwitchClose.Name = "pnlIsPowerSwitchClose";
             pnlIsPowerSwitchClose.Size = new Size(30, 29);
             pnlIsPowerSwitchClose.TabIndex = 6;
-            pnlIsPowerSwitchClose.Paint += panel2_Paint;
             // 
             // pnIs440VBatterySwitchClosed
             // 
@@ -647,7 +644,6 @@
             label6.Size = new Size(223, 31);
             label6.TabIndex = 9;
             label6.Text = "25kW电源故障信号";
-            label6.Click += label6_Click;
             // 
             // pnlIs25kWPowerFailed
             // 
@@ -668,7 +664,6 @@
             label2.Size = new Size(110, 31);
             label2.TabIndex = 3;
             label2.Text = "电池启动";
-            label2.Click += label2_Click;
             // 
             // label10
             // 
@@ -691,7 +686,6 @@
             label7.Size = new Size(209, 31);
             label7.TabIndex = 10;
             label7.Text = "5kW电源故障信号";
-            label7.Click += label7_Click;
             // 
             // label8
             // 
@@ -703,7 +697,6 @@
             label8.Size = new Size(192, 31);
             label8.TabIndex = 12;
             label8.Text = "440V蓄电池电量";
-            label8.Click += label8_Click;
             // 
             // label9
             // 
@@ -744,7 +737,6 @@
             lblBattery110VCapacity.Size = new Size(34, 31);
             lblBattery110VCapacity.TabIndex = 16;
             lblBattery110VCapacity.Text = "--";
-            lblBattery110VCapacity.Click += label11_Click;
             // 
             // splitContainer6
             // 

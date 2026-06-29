@@ -5,64 +5,242 @@ namespace MOCS.Cores.VCU
 {
     public class OBCStatus: INotifyPropertyChanged
     {
-        // ========== 440VµçÔ´ºÏÕ¢×´Ì¬ÊôĞÔ ==========
-        private bool _is440VBatterySwitchClosed = false; // Ë½ÓĞ×Ö¶Î£¨´æ´¢Êµ¼ÊÖµ£©
-        public bool Is440VBatterySwitchClosed
-        {
-            get => _is440VBatterySwitchClosed; // »ñÈ¡Öµ
-            set
-            {
-                // Ö»ÓĞÖµ±ä»¯Ê±²Å´¥·¢¸üĞÂ£¨·ÀÉÁË¸£©
-                if (_is440VBatterySwitchClosed != value)
-                {
-                    _is440VBatterySwitchClosed = value;
-                    // ´¥·¢ÊôĞÔ±ä¸üÊÂ¼ş£¨Í¨Öª UI ×´Ì¬±äÁË£©
-                    OnPropertyChanged(nameof(Is440VBatterySwitchClosed));
-                }
-            }
-        }
+        #region å•ä¾‹æ¨¡å¼
+        private static readonly OBCStatus _instance = new OBCStatus();
+        public static OBCStatus Instance => _instance;
+        
+        /// <summary>
+        /// ç§æœ‰æ„é€ å‡½æ•°ï¼Œé˜²æ­¢å¤–éƒ¨ new
+        /// </summary>
+        private OBCStatus() { }
+        #endregion
+        
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        //  ´¥·¢ÊÂ¼şµÄ¸¨Öú·½·¨
+        //  è§¦å‘äº‹ä»¶çš„è¾…åŠ©æ–¹æ³•
         protected virtual void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        public bool Is480VPowerSwitchClosed { get; set; } = false;
-        public bool IsDC330VCircuitBreakerEnabled { get; set; } = false;
-        public bool Is25kWPowerFailed { get; set; } = false;
-        public bool Is5kWPowerFailed { get; set; } = false;
-        public bool IsPantographEnergized { get; set; } = false;
-        public bool IsPantographExtended1 { get; set; } = false;
-        public bool IsPantographExtended2 { get; set; } = false;
-        public bool IsPantographRetracted1 { get; set; } = true;
-        public bool IsPantographRetracted2 { get; set; } = true;
-        public bool IsLeviated { get; set; } = false;
-        public bool IsGuideEnabled { get; set; } = false;
-        
-        // ========== 440VĞîµç³ØµçÁ¿ÊôĞÔ ==========
-        private float _battery440VCapacity = 0.0f; // Ë½ÓĞ×Ö¶Î£º´æ´¢µçÁ¿£¨0~100%£©
+
+        // ========== 440Vç”µæºåˆé—¸çŠ¶æ€å±æ€§ ==========
+        private bool _is440VBatterySwitchClosed = false; // ç§æœ‰å­—æ®µï¼ˆå­˜å‚¨å®é™…å€¼ï¼‰
+        public bool Is440VBatterySwitchClosed
+        {
+            get => _is440VBatterySwitchClosed; // è·å–å€¼
+            set
+            {
+                // åªæœ‰å€¼å˜åŒ–æ—¶æ‰è§¦å‘æ›´æ–°ï¼ˆé˜²é—ªçƒï¼‰
+                if (_is440VBatterySwitchClosed != value)
+                {
+                    _is440VBatterySwitchClosed = value;
+                    // è§¦å‘å±æ€§å˜æ›´äº‹ä»¶ï¼ˆé€šçŸ¥ UI çŠ¶æ€å˜äº†ï¼‰
+                    OnPropertyChanged(nameof(Is440VBatterySwitchClosed));
+                }
+            }
+        }
+
+        // ========== 480Vè¾“å‡ºåˆé—¸çŠ¶æ€å±æ€§ ==========
+        private bool _is480VPowerSwitchClosed = false;
+        public bool Is480VPowerSwitchClosed
+        {
+            get => _is480VPowerSwitchClosed;
+            set
+            {
+                if (_is480VPowerSwitchClosed != value)
+                {
+                    _is480VPowerSwitchClosed = value;
+                    OnPropertyChanged(nameof(Is480VPowerSwitchClosed));
+                }
+            }
+        }
+
+        // DC330Væ–­è·¯å™¨ä½¿èƒ½
+        private bool _isDC330VCircuitBreakerEnabled = false;
+        public bool IsDC330VCircuitBreakerEnabled
+        {
+            get => _isDC330VCircuitBreakerEnabled;
+            set
+            {
+                if (_isDC330VCircuitBreakerEnabled != value)
+                {
+                    _isDC330VCircuitBreakerEnabled = value;
+                    OnPropertyChanged(nameof(IsDC330VCircuitBreakerEnabled));
+                }
+            }
+        }
+
+        // 25kWç”µæºæ•…éšœ
+        private bool _is25kWPowerFailed = false;
+        public bool Is25kWPowerFailed
+        {
+            get => _is25kWPowerFailed;
+            set
+            {
+                if (_is25kWPowerFailed != value)
+                {
+                    _is25kWPowerFailed = value;
+                    OnPropertyChanged(nameof(Is25kWPowerFailed));
+                }
+            }
+        }
+
+        // 5kWç”µæºæ•…éšœ
+        private bool _is5kWPowerFailed = false;
+        public bool Is5kWPowerFailed
+        {
+            get => _is5kWPowerFailed;
+            set
+            {
+                if (_is5kWPowerFailed != value)
+                {
+                    _is5kWPowerFailed = value;
+                    OnPropertyChanged(nameof(Is5kWPowerFailed));
+                }
+            }
+        }
+
+        // å—æµå™¨å¸¦ç”µ
+        private bool _isPantographEnergized = false;
+        public bool IsPantographEnergized
+        {
+            get => _isPantographEnergized;
+            set
+            {
+                if (_isPantographEnergized != value)
+                {
+                    _isPantographEnergized = value;
+                    OnPropertyChanged(nameof(IsPantographEnergized));
+                }
+            }
+        }
+
+        // å—æµå™¨1å‡èµ·
+        private bool _isPantographExtended1 = false;
+        public bool IsPantographExtended1
+        {
+            get => _isPantographExtended1;
+            set
+            {
+                if (_isPantographExtended1 != value)
+                {
+                    _isPantographExtended1 = value;
+                    OnPropertyChanged(nameof(IsPantographExtended1));
+                }
+            }
+        }
+
+        // å—æµå™¨2å‡èµ·
+        private bool _isPantographExtended2 = false;
+        public bool IsPantographExtended2
+        {
+            get => _isPantographExtended2;
+            set
+            {
+                if (_isPantographExtended2 != value)
+                {
+                    _isPantographExtended2 = value;
+                    OnPropertyChanged(nameof(IsPantographExtended2));
+                }
+            }
+        }
+
+        // å—æµå™¨1æ”¶å›
+        private bool _isPantographRetracted1 = true;
+        public bool IsPantographRetracted1
+        {
+            get => _isPantographRetracted1;
+            set
+            {
+                if (_isPantographRetracted1 != value)
+                {
+                    _isPantographRetracted1 = value;
+                    OnPropertyChanged(nameof(IsPantographRetracted1));
+                }
+            }
+        }
+
+        // å—æµå™¨2æ”¶å›
+        private bool _isPantographRetracted2 = true;
+        public bool IsPantographRetracted2
+        {
+            get => _isPantographRetracted2;
+            set
+            {
+                if (_isPantographRetracted2 != value)
+                {
+                    _isPantographRetracted2 = value;
+                    OnPropertyChanged(nameof(IsPantographRetracted2));
+                }
+            }
+        }
+
+        // æ‚¬æµ®çŠ¶æ€
+        private bool _isLeviated = false;
+        public bool IsLeviated
+        {
+            get => _isLeviated;
+            set
+            {
+                if (_isLeviated != value)
+                {
+                    _isLeviated = value;
+                    OnPropertyChanged(nameof(IsLeviated));
+                }
+            }
+        }
+
+        // å¯¼å‘ä½¿èƒ½
+        private bool _isGuideEnabled = false;
+        public bool IsGuideEnabled
+        {
+            get => _isGuideEnabled;
+            set
+            {
+                if (_isGuideEnabled != value)
+                {
+                    _isGuideEnabled = value;
+                    OnPropertyChanged(nameof(IsGuideEnabled));
+                }
+            }
+        }
+
+
+        // ========== 440Vè“„ç”µæ± ç”µé‡å±æ€§ ==========
+        private float _battery440VCapacity = 0.0f;
         public float Battery440VCapacity
         {
             get => _battery440VCapacity;
             set
             {
-                // ÏÈÏŞÖÆµçÁ¿·¶Î§£¨0~100%£¬±ÜÃâÒì³£Öµ£©
                 float clampedValue = Math.Clamp(value, 0, 100);
-                // Ö»ÓĞÖµÕæµÄ±ä»¯Ê±£¬²Å¸üĞÂ+´¥·¢ÊÂ¼ş
                 if (_battery440VCapacity != clampedValue)
                 {
                     _battery440VCapacity = clampedValue;
-                    // ´¥·¢ÊÂ¼ş£¬Í¨ÖªUI¡°440VµçÁ¿±äÁË¡±
                     OnPropertyChanged(nameof(Battery440VCapacity));
                 }
             }
         }
 
-        public short Battery110VCapacity { get; set; } = 0;
+        // ========== 110Vè“„ç”µæ± ç”µé‡å±æ€§ ==========
+        private float _battery110VCapacity = 0.0f; // ç§æœ‰å­—æ®µï¼šfloatç±»å‹ï¼Œé»˜è®¤0.0f
+        public float Battery110VCapacity
+        {
+            get => _battery110VCapacity;
+            set
+            {
+                float clampedValue = Math.Clamp(value, 0, 100);
+                if (_battery110VCapacity != clampedValue)
+                {
+                    _battery110VCapacity = clampedValue; 
+                    OnPropertyChanged(nameof(Battery110VCapacity)); 
+                }
+            }
+        }
 
         public void Reset()
+
         {
             Is440VBatterySwitchClosed = false;
             Is480VPowerSwitchClosed = false;
