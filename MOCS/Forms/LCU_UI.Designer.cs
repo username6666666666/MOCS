@@ -321,6 +321,7 @@
             LCUdiagnose.Dock = DockStyle.Fill;
             LCUdiagnose.Location = new Point(3, 34);
             LCUdiagnose.Name = "LCUdiagnose";
+            LCUdiagnose.ReadOnly = true;
             LCUdiagnose.Size = new Size(698, 280);
             LCUdiagnose.TabIndex = 0;
             LCUdiagnose.Text = "";
@@ -370,6 +371,7 @@
             LCURecvMsg.Dock = DockStyle.Fill;
             LCURecvMsg.Location = new Point(3, 34);
             LCURecvMsg.Name = "LCURecvMsg";
+            LCURecvMsg.ReadOnly = true;
             LCURecvMsg.Size = new Size(929, 874);
             LCURecvMsg.TabIndex = 0;
             LCURecvMsg.Text = "";
@@ -391,6 +393,7 @@
             LCUSendMsg.Dock = DockStyle.Fill;
             LCUSendMsg.Location = new Point(3, 34);
             LCUSendMsg.Name = "LCUSendMsg";
+            LCUSendMsg.ReadOnly = true;
             LCUSendMsg.Size = new Size(927, 874);
             LCUSendMsg.TabIndex = 0;
             LCUSendMsg.Text = "";

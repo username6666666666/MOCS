@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Accessibility;
 using MOCS.Protocals;
+using MOCS.Utils;
 using NLog;
 
 namespace MOCS.Coms
@@ -33,7 +34,24 @@ namespace MOCS.Coms
 
         public IPEndPoint RemoteEndPoint { get; }
 
+        /// <summary>
+        /// 节点名称（用于 MessageMonitor 按子系统区分日志）
+        /// </summary>
+        public string NodeName { get; }
+
+        /// <summary>
+        /// 发送成功事件：参数为（原始帧字节数组, 报文类型名）
+        /// </summary>
+        public event Action<byte[], string>? OnRawFrameSent;
+
+        /// <summary>
+        /// 接收到原始帧事件：参数为（原始帧字节数组, 报文类型名或 null）
+        /// 无论解析成功/失败都会触发，供 UI 层按方向记录日志。
+        /// </summary>
+        public event Action<byte[], string?>? OnRawFrameReceived;
+
         public UdpMessageService(
+            string nodeName,
             IPAddress localIp,
             int localPort,
             IPAddress remoteIp,
@@ -43,6 +61,7 @@ namespace MOCS.Coms
             IMessageFactory<TBaseMsg>? messageFactory = null
         )
         {
+            NodeName = nodeName;
             _sender = new UdpClient();
             _receiver = new UdpClient(new IPEndPoint(localIp, localPort));
             RemoteEndPoint = new IPEndPoint(remoteIp, remotePort);
@@ -51,6 +70,7 @@ namespace MOCS.Coms
             _sendLogger = sendLogger;
             _messageFactory = messageFactory ?? new MessageFactory<TBaseMsg>();
         }
+
 
         public void RegisterParser(
             byte msgId,
@@ -84,8 +104,12 @@ namespace MOCS.Coms
                 var payLoad = msg.ToByteArray();
                 var bytes = _messageFactory.ToTransmitByteArray(payLoad);
                 await _sender.SendAsync(bytes, bytes.Length, RemoteEndPoint);
+
+                var msgType = typeof(T).Name;
+                OnRawFrameSent?.Invoke(bytes, msgType);
+
                 _sendLogger.Debug(
-                    $"发送成功 - 目标: {RemoteEndPoint.ToString()}, 类型: {typeof(T).Name}, 长度: {bytes.Length}字节, 数据: {BitConverter.ToString(bytes)}"
+                    $"发送成功 - 目标: {RemoteEndPoint.ToString()}, 类型: {msgType}, 长度: {bytes.Length}字节, 数据: {BitConverter.ToString(bytes)}"
                 );
             }
             catch (Exception ex)
@@ -93,6 +117,7 @@ namespace MOCS.Coms
                 _sendLogger.Error(ex, $"发送失败 - 类型: {typeof(T).Name}");
             }
         }
+
 
         public void StartListening()
         {
@@ -149,16 +174,25 @@ namespace MOCS.Coms
                 try
                 {
                     var result = await _receiver.ReceiveAsync(token).ConfigureAwait(false);
-                    if (_messageFactory.TryParseMessage(result.Buffer, out var msg, out var err))
+                    var buffer = result.Buffer;
+                    string? msgType = null;
+
+                    if (_messageFactory.TryParseMessage(buffer, out var msg, out var err))
                     {
+                        msgType = msg.GetType().Name;
                         await _dispatcher.Dispatch(msg).ConfigureAwait(false);
                     }
                     else
                     {
+                        // 解析失败时尝试提取 msgId，便于 UI 层按语义方向显示日志
+                        msgType = TryExtractMsgType(buffer);
                         _recvLogger.Warn(
-                            $"报文解析失败 - 来源: {result.RemoteEndPoint}, 错误信息: {err}, 原始报文: {BitConverter.ToString(result.Buffer)} "
+                            $"报文解析失败 - 来源: {result.RemoteEndPoint}, 错误信息: {err}, 原始报文: {BitConverter.ToString(buffer)} "
                         );
                     }
+
+                    // 无论解析成功/失败都触发原始帧接收事件，供 UI 记录日志
+                    OnRawFrameReceived?.Invoke(buffer.ToArray(), msgType);
                 }
                 catch (OperationCanceledException)
                 {
@@ -170,6 +204,17 @@ namespace MOCS.Coms
                 }
             }
         }
+
+        private static string? TryExtractMsgType(ReadOnlyMemory<byte> buffer)
+        {
+            // 协议帧结构: [head 1B][len 2B][seq 2B][msgId 1B][userdata...][crc 2B][tail 1B]
+            // 索引 8 处为 msgId（0-based）
+            if (buffer.Length < 9)
+                return null;
+            var msgId = buffer.Span[8];
+            return $"MsgId=0x{msgId:X2}";
+        }
+
 
         public void Dispose()
         {

@@ -29,11 +29,19 @@ namespace MOCS.Forms
         private void VSPS_UI_Load(object sender, EventArgs e)
         {
             _vspsInfo.PropertyChanged += VspsInfo_PropertyChanged;
+
+            // 绑定 VSPS 节点的收发报文 RTB
+            MessageMonitor.Instance.BindRecvRTB("VSPS", VSPS);
+            MessageMonitor.Instance.BindSendRTB("VSPS", VSPSSendMsg);
         }
 
         private void VSPS_UI_FormClosed(object sender, FormClosedEventArgs e)
         {
             _vspsInfo.PropertyChanged -= VspsInfo_PropertyChanged;
+
+            // 解除 VSPS 节点 RTB 绑定
+            MessageMonitor.Instance.UnbindRecvRTB("VSPS");
+            MessageMonitor.Instance.UnbindSendRTB("VSPS");
         }
         #endregion
 

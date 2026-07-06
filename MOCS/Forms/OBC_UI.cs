@@ -29,11 +29,19 @@ namespace MOCS.Forms
         private void OBC_UI_Load(object sender, EventArgs e)
         {
             _obcStatus.PropertyChanged += ObcStatus_PropertyChanged;
+
+            // 绑定 OBC 节点的收发报文 RTB
+            MessageMonitor.Instance.BindRecvRTB("OBC", richTextBox2);
+            MessageMonitor.Instance.BindSendRTB("OBC", richTextBox3);
         }
 
         private void OBC_UI_FormClosed(object sender, FormClosedEventArgs e)
         {
             _obcStatus.PropertyChanged -= ObcStatus_PropertyChanged;
+
+            // 解除 OBC 节点 RTB 绑定
+            MessageMonitor.Instance.UnbindRecvRTB("OBC");
+            MessageMonitor.Instance.UnbindSendRTB("OBC");
         }
         #endregion
 

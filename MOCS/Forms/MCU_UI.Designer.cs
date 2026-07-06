@@ -906,6 +906,7 @@
             MCUdiagnose.Dock = DockStyle.Fill;
             MCUdiagnose.Location = new Point(3, 34);
             MCUdiagnose.Name = "MCUdiagnose";
+            MCUdiagnose.ReadOnly = true;
             MCUdiagnose.Size = new Size(612, 271);
             MCUdiagnose.TabIndex = 0;
             MCUdiagnose.Text = "";
@@ -955,6 +956,7 @@
             MCURecvMsg.Dock = DockStyle.Fill;
             MCURecvMsg.Location = new Point(3, 34);
             MCURecvMsg.Name = "MCURecvMsg";
+            MCURecvMsg.ReadOnly = true;
             MCURecvMsg.Size = new Size(887, 874);
             MCURecvMsg.TabIndex = 0;
             MCURecvMsg.Text = "";
@@ -976,6 +978,7 @@
             MCUSendMsg.Dock = DockStyle.Fill;
             MCUSendMsg.Location = new Point(3, 34);
             MCUSendMsg.Name = "MCUSendMsg";
+            MCUSendMsg.ReadOnly = true;
             MCUSendMsg.Size = new Size(969, 874);
             MCUSendMsg.TabIndex = 0;
             MCUSendMsg.Text = "";

@@ -1016,6 +1016,7 @@
             MOCSdiagnose.Dock = DockStyle.Fill;
             MOCSdiagnose.Location = new Point(3, 34);
             MOCSdiagnose.Name = "MOCSdiagnose";
+            MOCSdiagnose.ReadOnly = true;
             MOCSdiagnose.Size = new Size(612, 269);
             MOCSdiagnose.TabIndex = 0;
             MOCSdiagnose.Text = "";
@@ -1065,6 +1066,7 @@
             MOCSRecvMsg.Dock = DockStyle.Fill;
             MOCSRecvMsg.Location = new Point(3, 34);
             MOCSRecvMsg.Name = "MOCSRecvMsg";
+            MOCSRecvMsg.ReadOnly = true;
             MOCSRecvMsg.Size = new Size(922, 874);
             MOCSRecvMsg.TabIndex = 0;
             MOCSRecvMsg.Text = "";
@@ -1086,6 +1088,7 @@
             MOCSSendMsg.Dock = DockStyle.Fill;
             MOCSSendMsg.Location = new Point(3, 34);
             MOCSSendMsg.Name = "MOCSSendMsg";
+            MOCSSendMsg.ReadOnly = true;
             MOCSSendMsg.Size = new Size(934, 874);
             MOCSSendMsg.TabIndex = 0;
             MOCSSendMsg.Text = "";

@@ -582,6 +582,7 @@
             VSPSdiagnose.Dock = DockStyle.Fill;
             VSPSdiagnose.Location = new Point(3, 34);
             VSPSdiagnose.Name = "VSPSdiagnose";
+            VSPSdiagnose.ReadOnly = true;
             VSPSdiagnose.Size = new Size(602, 256);
             VSPSdiagnose.TabIndex = 0;
             VSPSdiagnose.Text = "";
@@ -631,6 +632,7 @@
             VSPS.Dock = DockStyle.Fill;
             VSPS.Location = new Point(3, 34);
             VSPS.Name = "VSPS";
+            VSPS.ReadOnly = true;
             VSPS.Size = new Size(934, 874);
             VSPS.TabIndex = 0;
             VSPS.Text = "";
@@ -652,6 +654,7 @@
             VSPSSendMsg.Dock = DockStyle.Fill;
             VSPSSendMsg.Location = new Point(3, 34);
             VSPSSendMsg.Name = "VSPSSendMsg";
+            VSPSSendMsg.ReadOnly = true;
             VSPSSendMsg.Size = new Size(922, 874);
             VSPSSendMsg.TabIndex = 0;
             VSPSSendMsg.Text = "";

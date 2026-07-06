@@ -205,6 +205,7 @@
             GCUdiagnose.Dock = DockStyle.Fill;
             GCUdiagnose.Location = new Point(3, 34);
             GCUdiagnose.Name = "GCUdiagnose";
+            GCUdiagnose.ReadOnly = true;
             GCUdiagnose.Size = new Size(638, 304);
             GCUdiagnose.TabIndex = 0;
             GCUdiagnose.Text = "";
@@ -267,6 +268,7 @@
             GCURecvMsg.Dock = DockStyle.Fill;
             GCURecvMsg.Location = new Point(3, 34);
             GCURecvMsg.Name = "GCURecvMsg";
+            GCURecvMsg.ReadOnly = true;
             GCURecvMsg.Size = new Size(907, 871);
             GCURecvMsg.TabIndex = 0;
             GCURecvMsg.Text = "";
@@ -288,6 +290,7 @@
             GCUSendMsg.Dock = DockStyle.Fill;
             GCUSendMsg.Location = new Point(3, 34);
             GCUSendMsg.Name = "GCUSendMsg";
+            GCUSendMsg.ReadOnly = true;
             GCUSendMsg.Size = new Size(949, 871);
             GCUSendMsg.TabIndex = 0;
             GCUSendMsg.Text = "";

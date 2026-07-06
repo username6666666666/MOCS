@@ -20,6 +20,10 @@ namespace MOCS.Forms
 
         private void MCU_UI_Load(object? sender, EventArgs e)
         {
+            // 绑定 MCU 节点的收发报文 RTB（按方向分离显示）
+            MessageMonitor.Instance.BindRecvRTB("MCU", MCURecvMsg);
+            MessageMonitor.Instance.BindSendRTB("MCU", MCUSendMsg);
+
             // 订阅 MCUStatus 属性变化
             _mcuStatus.PropertyChanged += MCUStatus_PropertyChanged;
 
@@ -31,6 +35,10 @@ namespace MOCS.Forms
         {
             // 取消订阅，防止内存泄漏
             _mcuStatus.PropertyChanged -= MCUStatus_PropertyChanged;
+
+            // 解除 MCU 节点 RTB 绑定
+            MessageMonitor.Instance.UnbindRecvRTB("MCU");
+            MessageMonitor.Instance.UnbindSendRTB("MCU");
         }
 
         private void MCUStatus_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)

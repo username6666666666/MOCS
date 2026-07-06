@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MOCS", "MOCS\MOCS.csproj", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MOCS.Tests", "MOCS.Tests\MOCS.Tests.csproj", "{BF149752-24FA-428E-90DD-8CF3A4CB3B57}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MOCS.DebugTool", "MOCS.DebugTool\MOCS.DebugTool.csproj", "{AC31D930-D533-47D8-8987-8929F5E11CDE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{BF149752-24FA-428E-90DD-8CF3A4CB3B57}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BF149752-24FA-428E-90DD-8CF3A4CB3B57}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BF149752-24FA-428E-90DD-8CF3A4CB3B57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AC31D930-D533-47D8-8987-8929F5E11CDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC31D930-D533-47D8-8987-8929F5E11CDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC31D930-D533-47D8-8987-8929F5E11CDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC31D930-D533-47D8-8987-8929F5E11CDE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

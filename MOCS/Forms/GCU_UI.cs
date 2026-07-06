@@ -16,11 +16,22 @@ namespace MOCS.Forms
         public GCU_UI()
         {
             InitializeComponent();
+            this.Load += GCU_UI_Load;
+            this.FormClosed += GCU_UI_FormClosed;
         }
 
         private void GCU_UI_Load(object sender, EventArgs e)
         {
+            // 绑定 GCU 节点的收发报文 RTB
+            MessageMonitor.Instance.BindRecvRTB("GCU", GCURecvMsg);
+            MessageMonitor.Instance.BindSendRTB("GCU", GCUSendMsg);
+        }
 
+        private void GCU_UI_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            // 解除 GCU 节点 RTB 绑定
+            MessageMonitor.Instance.UnbindRecvRTB("GCU");
+            MessageMonitor.Instance.UnbindSendRTB("GCU");
         }
 
         #region ToolStripMenuItem 点击事件（所有菜单项）

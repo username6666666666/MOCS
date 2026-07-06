@@ -131,7 +131,15 @@ namespace MOCS.Cores.VCU
 
         private void BeginCommunicate()
         {
+            // 注册所有与 VCU 端口通信的节点（用于报文统计）
+            MessageMonitor.Instance.RegisterNode("VCU");
+            MessageMonitor.Instance.RegisterNode("LCU");
+            MessageMonitor.Instance.RegisterNode("GCU");
+            MessageMonitor.Instance.RegisterNode("VSPS");
+            MessageMonitor.Instance.RegisterNode("OBC");
+
             _udpMsgSevice = new UdpMessageService<BaseMessage>(
+                "VCU",
                 LocalIpAddress,
                 LocalPort,
                 RemoteIpAddress,
@@ -141,8 +149,11 @@ namespace MOCS.Cores.VCU
             );
             ConfigMsgParsers();
             ConfigMsgHandlers();
-            ConfigureTimer(true, _EMSControlMsgSendTimer);
+            _udpMsgSevice.OnRawFrameSent += OnRawFrameSent;
+            _udpMsgSevice.OnRawFrameReceived += OnRawFrameReceived;
             _udpMsgSevice.StartListening();
+            if (AutoSendEnabled)
+                ConfigureTimer(true, _EMSControlMsgSendTimer);
             SysLogger.Info($"开始监听端口: {LocalPort}");
         }
 
@@ -151,9 +162,91 @@ namespace MOCS.Cores.VCU
             ConfigureTimer(false, _EMSControlMsgSendTimer);
             if (_udpMsgSevice != null)
             {
+                _udpMsgSevice.OnRawFrameSent -= OnRawFrameSent;
+                _udpMsgSevice.OnRawFrameReceived -= OnRawFrameReceived;
                 await _udpMsgSevice.DisposeAsync();
             }
             SysLogger.Info($"停止监听端口: {LocalPort}");
+        }
+
+        private void OnRawFrameSent(byte[] frame, string msgType)
+        {
+            // MOCS 端发到 VCU 的报文：所有 MOCS→VCU 报文都源于 MOCS
+            // 0x21 EMSControlMsg：广播给所有 LCU 和 GCU
+            // 0x71 OBCMsg：发给 OBC
+            var msgId = frame.Length >= 9 ? frame[8] : (byte)0;
+            switch (msgId)
+            {
+                case 0x21: // EMSControlMsg：主路径 MOCS→VCU，LCU/GCU 仅写接收框
+                    MessageMonitor.Instance.RecordNodeFrame("MOCS", "VCU", frame, msgType);
+                    MessageMonitor.Instance.RecordRecvOnly("MOCS", "LCU", frame, msgType);
+                    MessageMonitor.Instance.RecordRecvOnly("MOCS", "GCU", frame, msgType);
+                    break;
+                case 0x71: // OBCMsg 控制
+                    MessageMonitor.Instance.RecordNodeFrame("MOCS", "OBC", frame, msgType);
+                    break;
+                default:
+                    MessageMonitor.Instance.RecordNodeFrame("MOCS", "VCU", frame, msgType);
+                    break;
+            }
+        }
+
+        private void OnRawFrameReceived(byte[] frame, string? msgType)
+        {
+            var msgId = frame.Length >= 9 ? frame[8] : (byte)0;
+
+            // MOCS→VCU 下行报文：0x21(EMSControlMsg) / 0x71(OBCControlMsg)
+            // 这些报文是 DebugTool 模拟 MOCS 发出的，应归类为 MOCS 发送、VCU 接收
+            if (msgId == 0x21)
+            {
+                // 主路径：MOCS→VCU（写 MOCS 发送框 + VCU 接收框）
+                MessageMonitor.Instance.RecordNodeFrame("MOCS", "VCU", frame, msgType);
+                // 广播：LCU/GCU 仅写接收框（避免 MOCS 发送框重复 3 次）
+                MessageMonitor.Instance.RecordRecvOnly("MOCS", "LCU", frame, msgType);
+                MessageMonitor.Instance.RecordRecvOnly("MOCS", "GCU", frame, msgType);
+                return;
+            }
+            if (msgId == 0x71)
+            {
+                MessageMonitor.Instance.RecordNodeFrame("MOCS", "OBC", frame, msgType);
+                return;
+            }
+
+            // VCU→MOCS 上行报文：实际发送方由 msgId 决定
+            var sender = GetInboundSender(msgId, frame);
+
+            // 写入 sender 节点的"发送"RTB 与 MOCS 节点的"接收"RTB
+            MessageMonitor.Instance.RecordNodeFrame(sender, "MOCS", frame, msgType);
+        }
+
+        /// <summary>
+        /// 判定 VCU→MOCS 报文的"发送方"节点名（按 msgId + UserData CANID 细分）
+        /// </summary>
+        private static string GetInboundSender(byte msgId, byte[] frame)
+        {
+            switch (msgId)
+            {
+                case 0x81: // EMSStatusMsgA
+                case 0x82: // EMSStatusMsgB
+                {
+                    if (frame.Length >= 10) // 至少 1 字节 UserData
+                    {
+                        var canId = frame[9]; // UserData[0]
+                        // LCU: 0x21-0x26, 0x61-0x66
+                        if ((canId >= 0x21 && canId <= 0x20 + LCUNum) ||
+                            (canId >= 0x61 && canId <= 0x60 + LCUNum))
+                            return "LCU";
+                        // GCU: 0x41-0x46, 0x81-0x86
+                        if ((canId >= 0x41 && canId <= 0x40 + GCUNum) ||
+                            (canId >= 0x81 && canId <= 0x80 + GCUNum))
+                            return "GCU";
+                    }
+                    return "VCU";
+                }
+                case 0xE1: return "VSPS";
+                case 0xF1: return "OBC";
+                default:   return "VCU";
+            }
         }
 
         private async void EMSControlMsgSendTimeOut()
@@ -351,6 +444,11 @@ namespace MOCS.Cores.VCU
         public int LocalPort { get; set; } = 6001;
         public IPAddress RemoteIpAddress { get; set; } = IPAddress.Parse("192.168.43.10");
         public int RemotePort { get; set; } = 8001;
+
+        /// <summary>
+        /// 是否启用自动发送（EMS/OBC 控制报文定时器等）。DebugTool 测试场景应设为 false。
+        /// </summary>
+        public bool AutoSendEnabled { get; set; } = true;
 
         private readonly StateMachine<VCInterfaceState, VCInterfaceTrigger> _vcInterfaceSM;
         private readonly HighPrecisionTimer _EMSControlMsgSendTimer;

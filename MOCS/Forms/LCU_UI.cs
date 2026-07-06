@@ -29,11 +29,19 @@ namespace MOCS.Forms
         private void LCU_UI_Load(object sender, EventArgs e)
         {
             _emsStatus.PropertyChanged += EmsStatus_PropertyChanged;
+
+            // 绑定 LCU 节点的收发报文 RTB
+            MessageMonitor.Instance.BindRecvRTB("LCU", LCURecvMsg);
+            MessageMonitor.Instance.BindSendRTB("LCU", LCUSendMsg);
         }
 
         private void LCU_UI_FormClosed(object sender, FormClosedEventArgs e)
         {
             _emsStatus.PropertyChanged -= EmsStatus_PropertyChanged;
+
+            // 解除 LCU 节点 RTB 绑定
+            MessageMonitor.Instance.UnbindRecvRTB("LCU");
+            MessageMonitor.Instance.UnbindSendRTB("LCU");
         }
         #endregion
 

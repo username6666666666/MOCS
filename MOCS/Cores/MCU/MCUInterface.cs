@@ -18,6 +18,38 @@ namespace MOCS.Cores.MCU
 
         #region 面向界面层的公共接口
 
+        /// <summary>
+        /// 检查是否可以启动通信（状态机当前允许 Activate）
+        /// </summary>
+        public bool CanFireActivate()
+        {
+            return _mcuInterfaceSM.CanFire(MCUInterfaceTrigger.Activate);
+        }
+
+        /// <summary>
+        /// 启动通信：触发状态机 Activate → Stop.OnExit(BeginCommunicate)
+        /// 必须用 FireAsync，因为目标状态 UnConnected 配置了 OnEntryAsync
+        /// </summary>
+        public async Task FireActivate()
+        {
+            if (_mcuInterfaceSM.CanFire(MCUInterfaceTrigger.Activate))
+            {
+                await _mcuInterfaceSM.FireAsync(MCUInterfaceTrigger.Activate);
+            }
+        }
+
+        /// <summary>
+        /// 停止通信：触发状态机 Deactivate
+        /// 必须用 FireAsync，因为源状态 Connected 配置了 OnExitAsync(StopCommunicate)
+        /// </summary>
+        public async Task FireDeactivate()
+        {
+            if (_mcuInterfaceSM.CanFire(MCUInterfaceTrigger.Deactivate))
+            {
+                await _mcuInterfaceSM.FireAsync(MCUInterfaceTrigger.Deactivate);
+            }
+        }
+
         public void RunPBSCommand()
         {
             _mcuInterfaceSM.Fire(_changeMCUStateTrigger, MCUStateChangeCommand.PBS);
@@ -75,9 +107,6 @@ namespace MOCS.Cores.MCU
                 MCUStateChangeMonitorState,
                 MCUStateChangeMonitorTrigger
             >(MCUStateChangeMonitorState.Stop);
-            _changeMCUStateTrigger = _mcuInterfaceSM.SetTriggerParameters<MCUStateChangeCommand>(
-                MCUInterfaceTrigger.ChangeMCUState
-            );
             _mcuLifeCycleSendTimer = new HighPrecisionTimer(
                 new TimeSpan(0, 0, 3),
                 MCULifeCycleSendTimeOut
@@ -103,7 +132,7 @@ namespace MOCS.Cores.MCU
 
             // -----------停止状态-------------
             // 进入时，初始化和接口有关的所有状态
-            // 启动事件触发时，转移至“未连接状态”
+            // 启动事件触发时，转移至"未连接状态"
             // 离开时，启动通信
             _mcuInterfaceSM
                 .Configure(MCUInterfaceState.Stop)
@@ -114,9 +143,9 @@ namespace MOCS.Cores.MCU
             // -----------未连接状态-------------
             // 进入时，发送MOCS状态报文
             // 生命周期报文发送事件触发时，发送MOCS状态报文
-            // 生命周期报文接收事件触发时，转移至“连接状态”
-            // 关闭事件触发时，转移至“关闭状态”
-            // 离开时，如果目标状态为“关闭状态”，则停止通信
+            // 生命周期报文接收事件触发时，转移至"连接状态"
+            // 关闭事件触发时，转移至"关闭状态"
+            // 离开时，如果目标状态为"关闭状态"，则停止通信
             _mcuInterfaceSM
                 .Configure(MCUInterfaceState.UnConnected)
                 .OnEntryAsync(SendMOCSStatusMsgAsync)
@@ -136,11 +165,11 @@ namespace MOCS.Cores.MCU
 
             // -----------连接状态-------------
             // 进入时，启动生命周期报文接收超时定时器
-            // 自动转移至子状态“未知状态”
+            // 自动转移至子状态"未知状态"
             // 生命周期报文发送事件触发时，发送MOCS状态报文
             // 生命周期报文接收超时事件触发时，判断是否超出上限
-            // 如果为真，则转移至“未连接状态”
-            // 关闭事件触发时，转移至“停止状态”
+            // 如果为真，则转移至"未连接状态"
+            // 关闭事件触发时，转移至"停止状态"
             // 离开时，关闭生命周期报文接收超时定时器
             _mcuInterfaceSM
                 .Configure(MCUInterfaceState.Connected)
@@ -165,9 +194,9 @@ namespace MOCS.Cores.MCU
                 });
 
             // -----------连接状态-------------
-            // 配置为“连接状态”的子状态
+            // 配置为"连接状态"的子状态
             // 进入时，启动牵引系统状态转换监视
-            // 牵引系统状态转换完成事件触发时，转移至“初始状态”
+            // 牵引系统状态转换完成事件触发时，转移至"初始状态"
             // 离开时，关闭牵引系统状态转换监视
             _mcuInterfaceSM
                 .Configure(MCUInterfaceState.UnKnown)
@@ -177,9 +206,9 @@ namespace MOCS.Cores.MCU
                 .OnExit(DeactivateMCUStateChangeMonitor);
 
             // -----------初始状态-------------
-            // 配置为“连接状态”的子状态
+            // 配置为"连接状态"的子状态
             // 牵引系统状态转换事件触发时，响应相应的转换命令
-            // 牵引系统状态转换完成事件触发时，转移至“基本状态”
+            // 牵引系统状态转换完成事件触发时，转移至"基本状态"
             // 离开时，关闭牵引系统状态转换监视
             _mcuInterfaceSM
                 .Configure(MCUInterfaceState.Initial)
@@ -192,7 +221,7 @@ namespace MOCS.Cores.MCU
                 .OnExit(DeactivateMCUStateChangeMonitor);
 
             // -----------基本状态-------------
-            // 配置为“连接状态”的子状态
+            // 配置为"连接状态"的子状态
             // 牵引系统状态转换事件触发时，响应相应的转换命令
             // 牵引系统状态转换完成事件触发时，转移至与转换命令对应的状态
             // 离开时，关闭牵引系统状态转换监视
@@ -207,7 +236,7 @@ namespace MOCS.Cores.MCU
                 .OnExit(DeactivateMCUStateChangeMonitor);
 
             // -----------带电等待状态-------------
-            // 配置为“连接状态”的子状态
+            // 配置为"连接状态"的子状态
             // 牵引系统状态转换事件触发时，响应相应的转换命令
             // 牵引系统状态转换完成事件触发时，转移至与转换命令对应的状态
             // 离开时，关闭牵引系统状态转换监视
@@ -222,15 +251,15 @@ namespace MOCS.Cores.MCU
                 .OnExit(DeactivateMCUStateChangeMonitor);
 
             // -----------准备测试状态-------------
-            // 配置为“连接状态”的子状态
+            // 配置为"连接状态"的子状态
             _mcuInterfaceSM
                 .Configure(MCUInterfaceState.ReadyForTest)
                 .SubstateOf(MCUInterfaceState.Connected);
 
             // -----------带电牵引测试状态-------------
-            // 配置为“连接状态”的子状态
+            // 配置为"连接状态"的子状态
             // 牵引系统状态转换事件触发时，开始状态转移
-            // 牵引系统状态转换完成事件触发时，转移至“基本状态”
+            // 牵引系统状态转换完成事件触发时，转移至"基本状态"
             // 离开时，关闭牵引系统状态转换监视
             _mcuInterfaceSM
                 .Configure(MCUInterfaceState.HotTractionTest)
@@ -243,9 +272,9 @@ namespace MOCS.Cores.MCU
                 .OnExit(DeactivateMCUStateChangeMonitor);
 
             // -----------不带电牵引测试状态-------------
-            // 配置为“连接状态”的子状态
+            // 配置为"连接状态"的子状态
             // 牵引系统状态转换事件触发时，开始状态转移
-            // 牵引系统状态转换完成事件触发时，转移至“基本状态”
+            // 牵引系统状态转换完成事件触发时，转移至"基本状态"
             // 离开时，关闭牵引系统状态转换监视
             _mcuInterfaceSM
                 .Configure(MCUInterfaceState.DeadTractionTest)
@@ -258,7 +287,7 @@ namespace MOCS.Cores.MCU
                 .OnExit(DeactivateMCUStateChangeMonitor);
 
             // -----------模拟运行状态-------------
-            // 配置为“连接状态”的子状态
+            // 配置为"连接状态"的子状态
             _mcuInterfaceSM
                 .Configure(MCUInterfaceState.SimulatedRunning)
                 .SubstateOf(MCUInterfaceState.Connected);
@@ -266,7 +295,7 @@ namespace MOCS.Cores.MCU
             //.OnExit(DeactivateMCUStateChangeMonitor);
 
             // -----------悬浮架运行状态-------------
-            // 配置为“连接状态”的子状态
+            // 配置为"连接状态"的子状态
             _mcuInterfaceSM
                 .Configure(MCUInterfaceState.MaglevFrameRunning)
                 .SubstateOf(MCUInterfaceState.Connected)
@@ -488,7 +517,11 @@ namespace MOCS.Cores.MCU
 
         private void BeginCommunicate()
         {
+            MessageMonitor.Instance.RegisterNode("MCU");
+            MessageMonitor.Instance.RegisterNode("MOCS");
+
             _udpMsgSevice = new UdpMessageService<BaseMessage>(
+                "MCU",
                 LocalIpAddress,
                 LocalPort,
                 RemoteIpAddress,
@@ -498,8 +531,11 @@ namespace MOCS.Cores.MCU
             );
             ConfigMsgParsers();
             ConfigMsgHandlers();
+            _udpMsgSevice.OnRawFrameSent += OnRawFrameSent;
+            _udpMsgSevice.OnRawFrameReceived += OnRawFrameReceived;
             _udpMsgSevice.StartListening();
-            ConfigureTimer(true, _mcuLifeCycleSendTimer);
+            if (AutoSendEnabled)
+                ConfigureTimer(true, _mcuLifeCycleSendTimer);
             SysLogger.Info($"开始监听端口: {LocalPort}");
         }
 
@@ -508,14 +544,52 @@ namespace MOCS.Cores.MCU
             ConfigureTimer(false, _mcuLifeCycleSendTimer);
             if (_udpMsgSevice != null)
             {
+                _udpMsgSevice.OnRawFrameSent -= OnRawFrameSent;
+                _udpMsgSevice.OnRawFrameReceived -= OnRawFrameReceived;
                 await _udpMsgSevice.DisposeAsync();
             }
             SysLogger.Info($"停止监听端口: {LocalPort}");
         }
 
+        private void OnRawFrameSent(byte[] frame, string msgType)
+        {
+            // MCU 接口发送的报文语义上均为 MOCS -> MCU
+            // MOCS 是发送方，MCU 是接收方
+            MessageMonitor.Instance.RecordNodeFrame("MOCS", "MCU", frame, msgType);
+        }
+
+        private void OnRawFrameReceived(byte[] frame, string? msgType)
+        {
+            var msgId = frame.Length >= 9 ? frame[8] : (byte?)null;
+
+            // 0x01-0x09: MOCS 发给 MCU 的报文（DCS状态、改变牵引状态、登录/注销等）
+            // 0x81-0x82: MCU 发给 MOCS 的报文（MCU状态、MCU应答）
+            bool isMocsToMcu = msgId is >= 0x01 and <= 0x09;
+            bool isMcuToMocs = msgId is 0x81 or 0x82;
+
+            if (isMocsToMcu)
+            {
+                // MOCS -> MCU
+                MessageMonitor.Instance.RecordNodeFrame("MOCS", "MCU", frame, msgType);
+            }
+            else if (isMcuToMocs)
+            {
+                // MCU -> MOCS
+                MessageMonitor.Instance.RecordNodeFrame("MCU", "MOCS", frame, msgType);
+            }
+            else
+            {
+                // 未知方向，保守处理为 MOCS -> MCU
+                MessageMonitor.Instance.RecordNodeFrame("MOCS", "MCU", frame, msgType);
+            }
+        }
+
+
         private void MCULifeCycleSendTimeOut()
         {
-            _mcuInterfaceSM.Fire(MCUInterfaceTrigger.MOCSLifeCycleMsgSend);
+            // 同步 Fire 会与 InternalTransitionAsync 冲突，必须用 FireAsync
+            // timer callback 是 Action 签名，故用 fire-and-forget 触发异步任务
+            _ = _mcuInterfaceSM.FireAsync(MCUInterfaceTrigger.MOCSLifeCycleMsgSend);
         }
 
         private void MCULifeCycleRecvTimeOut()
@@ -524,6 +598,9 @@ namespace MOCS.Cores.MCU
             if (_mcuLifeCycleRecvTimeOutCounts >= 2)
             {
                 IsLifeCycleRecTimeOutBeyondLimits = true;
+                // 目标状态 UnConnected 配置了 OnEntryAsync(SendMOCSStatusMsgAsync)，必须 FireAsync
+                // timer callback 是 Action 签名，故用 fire-and-forget 触发异步任务
+                _ = _mcuInterfaceSM.FireAsync(MCUInterfaceTrigger.MCULifeCycleMsgRecvTimeOut);
                 _mcuInterfaceSM.Fire(MCUInterfaceTrigger.MCULifeCycleMsgRecvTimeOut);
             }
         }
@@ -531,6 +608,11 @@ namespace MOCS.Cores.MCU
         #region 私有报文发送方法
         private async Task SendMOCSStatusMsgAsync()
         {
+            // DebugTool 场景：AutoSendEnabled=false 时不发送任何报文
+            if (!AutoSendEnabled)
+            {
+                return;
+            }
             var sequenceNum = _sequenceManager.GetNextSequenceNum(PacketCategory.B);
             MOCSStatusMsg msg = new()
             {
@@ -661,8 +743,8 @@ namespace MOCS.Cores.MCU
             MCUStatusField.TractionCapacityForVirtualVehicle = data[24];
             MCUStatusField.MCUFaultStatus = (MCUFaultStatusEnum)data[25];
             MCUStatusField.ParkingPointsNum = data[26];
-            // TODO: 对“当前”悬浮架的5个停车点运行的调试信息
-            // TODO: 对“虚拟”悬浮架的5个停车点运行的调试信息
+            // TODO: 对"当前"悬浮架的5个停车点运行的调试信息
+            // TODO: 对"虚拟"悬浮架的5个停车点运行的调试信息
         }
 
         private void OnRecvMCUReplyMsg(MCUReplyMsg msg)
@@ -684,6 +766,11 @@ namespace MOCS.Cores.MCU
         public int LocalPort { get; set; } = 6002;
         public IPAddress RemoteIpAddress { get; set; } = IPAddress.Parse("192.168.43.5");
         public int RemotePort { get; set; } = 8008;
+
+        /// <summary>
+        /// 是否启用自动发送（生命周期报文定时器等）。DebugTool 测试场景应设为 false。
+        /// </summary>
+        public bool AutoSendEnabled { get; set; } = true;
 
         private readonly StateMachine<MCUInterfaceState, MCUInterfaceTrigger> _mcuInterfaceSM;
         private readonly StateMachine<

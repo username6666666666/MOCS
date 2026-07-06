@@ -1,9 +1,11 @@
 ﻿using MOCS.Cores.MCU;
 using MOCS.Cores.VCU;
 using MOCS.Utils;
+using NLog;
 using System;
 using System.ComponentModel;
 using System.Drawing;
+using System.Net;
 using System.Windows.Forms;
 
 namespace MOCS.Forms
@@ -15,12 +17,20 @@ namespace MOCS.Forms
         private readonly VSPSInfo _vspsInfo = VSPSInfo.Instance;
         private readonly OBCStatus _obcStatus = OBCStatus.Instance;
         private readonly EMSStatus _emsStatus = EMSStatus.Instance;
+
+        // 通信接口（在构造函数中创建，在"开始编译"时启动）
+        private MCUInterface? _mcuInterface;
+        private VCUInterface? _vcuInterface;
         #endregion
 
         #region 构造函数
         public MOCS_UI()
         {
             InitializeComponent();
+
+            // 创建通信接口实例
+            InitCommunicationInterfaces();
+
             // 程序启动时，把主窗口自身注册到FormManager
             FormManager.RegisterOpenedForm(this);
             // 主窗口关闭时：关闭所有子窗口 + 终止程序
@@ -34,25 +44,100 @@ namespace MOCS.Forms
             // 初始化UI显示
             InitMOCSUI();
         }
+
+        /// <summary>
+        /// 初始化 MCUInterface 和 VCUInterface，配置 Logger 和 IP 地址
+        /// </summary>
+        private void InitCommunicationInterfaces()
+        {
+            var sysLogger = LogManager.GetLogger("DiagnosticLogger");
+            var recvLogger = LogManager.GetLogger("ReceiveLogger");
+            var sendLogger = LogManager.GetLogger("SendLogger");
+
+            // 创建 MCU 接口（监听 6002 端口）
+            _mcuInterface = new MCUInterface(sysLogger, recvLogger, sendLogger);
+            // DebugTool 场景：绑定到 IPAddress.Any 以同时接收 127.0.0.1 和 192.168.43.x 的报文
+            _mcuInterface.LocalIpAddress = IPAddress.Any;
+            // DebugTool 场景：关闭自动发送（生命周期报文定时器），由用户手动触发发送
+            _mcuInterface.AutoSendEnabled = false;
+
+            // 创建 VCU 接口（监听 6001 端口）
+            _vcuInterface = new VCUInterface(sysLogger, recvLogger, sendLogger);
+            _vcuInterface.LocalIpAddress = IPAddress.Any;
+            _vcuInterface.AutoSendEnabled = false;
+        }
         #endregion
 
         #region 窗体生命周期事件
-        private void MOCS_UI_Load(object sender, EventArgs e)
+        private async void MOCS_UI_Load(object sender, EventArgs e)
         {
+            // 注册 MOCS 节点并绑定"接收/发送"报文 RTB
+            // MOCS 节点承担了"中心路由"角色：
+            //   MOCSRecvMsg 显示所有"由 MOCS 接收"的报文（VCU/MCU → MOCS）
+            //   MOCSSendMsg 显示所有"由 MOCS 发送"的报文（MOCS → VCU/MCU）
+            MessageMonitor.Instance.RegisterNode("MOCS");
+            MessageMonitor.Instance.BindRecvRTB("MOCS", MOCSRecvMsg);
+            MessageMonitor.Instance.BindSendRTB("MOCS", MOCSSendMsg);
+
             // 订阅所有子系统的属性变更事件
             _mocsStatus.PropertyChanged += MocsStatus_PropertyChanged;
             _vspsInfo.PropertyChanged += VspsInfo_PropertyChanged;
             _obcStatus.PropertyChanged += ObcStatus_PropertyChanged;
             _emsStatus.PropertyChanged += EmsStatus_PropertyChanged;
+
+            // 窗口加载后自动启动通信（绑定 UDP 端口监听）
+            await StartCommunicationAsync();
         }
 
-        private void MOCS_UI_FormClosed(object sender, FormClosedEventArgs e)
+        private async void MOCS_UI_FormClosed(object sender, FormClosedEventArgs e)
         {
             // 取消订阅，防止内存泄漏
             _mocsStatus.PropertyChanged -= MocsStatus_PropertyChanged;
             _vspsInfo.PropertyChanged -= VspsInfo_PropertyChanged;
             _obcStatus.PropertyChanged -= ObcStatus_PropertyChanged;
             _emsStatus.PropertyChanged -= EmsStatus_PropertyChanged;
+
+            // 解除 MOCS 节点 RTB 绑定
+            MessageMonitor.Instance.UnbindRecvRTB("MOCS");
+            MessageMonitor.Instance.UnbindSendRTB("MOCS");
+
+            // 停止通信并释放资源
+            await StopCommunicationAsync();
+        }
+        #endregion
+
+        #region 通信控制（"开始编译"/"停止编译"）
+        /// <summary>
+        /// 启动所有通信接口，开始监听 UDP 端口
+        /// </summary>
+        public async Task StartCommunicationAsync()
+        {
+            if (_mcuInterface != null)
+            {
+                // MCUInterface 通过状态机 Activate 触发 BeginCommunicate
+                // FireActivate 内部已检查 CanFireActivate
+                await _mcuInterface.FireActivate();
+            }
+            if (_vcuInterface != null)
+            {
+                await _vcuInterface.StartAsync();
+            }
+        }
+
+        /// <summary>
+        /// 停止所有通信接口
+        /// </summary>
+        public async Task StopCommunicationAsync()
+        {
+            if (_vcuInterface != null)
+            {
+                await _vcuInterface.StopAsync();
+            }
+            // MCUInterface 通过状态机 Deactivate 触发停止
+            if (_mcuInterface != null)
+            {
+                await _mcuInterface.FireDeactivate();
+            }
         }
         #endregion
 
